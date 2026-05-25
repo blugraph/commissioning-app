@@ -1944,9 +1944,11 @@ async function fillDocPhotos(docId) {
 
   console.log(`fillDocPhotos: sending ${count} resized photos to Apps Script…`);
 
+  // Use text/plain to avoid CORS preflight (same as token fetch).
+  // Apps Script reads e.postData.contents and parses JSON itself.
   const resp = await fetch(CFG.tokenEndpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'fillPhotos', docId, photos }),
   });
   const result = await resp.json();
