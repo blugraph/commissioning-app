@@ -1706,19 +1706,27 @@ async function saveToGoogleDrive() {
     const parentId = await getParentFolderId();
     const filename = getFilename();
 
-    // 1 ── Copy the template document
-    const copyMeta = { name: filename };
-    if (parentId) copyMeta.parents = [parentId];
-    const copyResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${CFG.templateDocId}/copy`,
-      { method:'POST', headers:{ Authorization:`Bearer ${STATE.accessToken}`, 'Content-Type':'application/json' },
-        body: JSON.stringify(copyMeta) }
-    );
+    // 1 ── Copy the template via Apps Script (runs as real user → uses your
+    //      Drive quota, not the service account's zero-quota storage).
+    //      Apps Script then grants the service account editor access so we
+    //      can fill in text markers and photos with the steps below.
+    const copyResp = await fetch(CFG.tokenEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'copyTemplate',
+        templateId: CFG.templateDocId,
+        filename,
+        parentId: parentId || null,
+      }),
+    });
     if (!copyResp.ok) {
-      const e = await copyResp.json().catch(()=>({}));
-      throw new Error('Template copy failed: ' + (e.error?.message || copyResp.status));
+      const e = await copyResp.json().catch(() => ({}));
+      throw new Error('Template copy failed: ' + (e.error || copyResp.status));
     }
-    const newDocId = (await copyResp.json()).id;
+    const copyData = await copyResp.json();
+    if (copyData.error) throw new Error('Template copy failed: ' + copyData.error);
+    const newDocId = copyData.docId;
 
     // 2 ── Replace X1–X25 text markers in one batchUpdate
     await fillDocText(newDocId);

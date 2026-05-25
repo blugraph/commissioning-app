@@ -1,38 +1,69 @@
 /**
- * Commissioning App – Token Proxy
- * ================================
- * Deploy this as a Google Apps Script Web App:
+ * Commissioning App – Backend
+ * ============================
+ * Deploy as a Google Apps Script Web App:
  *   Execute as: Me
  *   Who has access: Anyone
  *
- * Setup:
- *   1. In the script editor: Project Settings → Script Properties
- *   2. Add property:  SERVICE_ACCOUNT  =  <paste full JSON key file contents>
- *   3. Deploy → New deployment → Web App → Execute as Me, Anyone → Deploy
- *   4. Copy the Web App URL into CFG.tokenEndpoint in index.html
+ * Script Properties (Project Settings → Script Properties):
+ *   SERVICE_ACCOUNT  =  <full contents of the service account JSON key file>
+ *
+ * After deploying, copy the Web App URL into the ⚙️ settings panel in the app.
  */
 
-// ── CORS pre-flight ───────────────────────────────────────────────
+// ── Entry points ──────────────────────────────────────────────────
+
 function doGet(e) {
   return respond({ status: 'ok' });
 }
 
-// ── Token request ─────────────────────────────────────────────────
 function doPost(e) {
   try {
-    var sa = JSON.parse(
-      PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT')
-    );
-    if (!sa || !sa.private_key) throw new Error('SERVICE_ACCOUNT property not configured.');
+    var body = {};
+    if (e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
+    }
 
-    var token = mintAccessToken(sa);
-    return respond({ token: token, expires_in: 3600 });
+    switch (body.action) {
+      case 'copyTemplate': return copyTemplateAction(body);
+      default:             return getTokenAction();
+    }
   } catch (err) {
-    return respond({ error: err.message }, 500);
+    return respond({ error: err.message });
   }
 }
 
-// ── Mint a service-account access token via JWT ───────────────────
+// ── Action: copy template doc as script owner (counts against your quota) ──
+//
+// The service account cannot own files (it has no Drive storage).
+// This action runs as the Apps Script owner, so the new doc is owned
+// by your real Google account and uses your 100 GB quota.
+// After copying, it grants the service account editor access so it can
+// fill in the text markers and insert photos.
+
+function copyTemplateAction(body) {
+  var sa       = JSON.parse(PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT'));
+  var template = DriveApp.getFileById(body.templateId);
+  var folder   = body.parentId
+    ? DriveApp.getFolderById(body.parentId)
+    : DriveApp.getRootFolder();
+
+  var copy = template.makeCopy(body.filename, folder);
+
+  // Grant service account editor access so the frontend can fill the doc
+  copy.addEditor(sa.client_email);
+
+  return respond({ docId: copy.getId(), url: copy.getUrl() });
+}
+
+// ── Action: mint a service-account access token ───────────────────
+
+function getTokenAction() {
+  var sa    = JSON.parse(PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT'));
+  var token = mintAccessToken(sa);
+  return respond({ token: token, expires_in: 3600 });
+}
+
 function mintAccessToken(sa) {
   var now   = Math.floor(Date.now() / 1000);
   var scope = [
@@ -68,8 +99,9 @@ function mintAccessToken(sa) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
+
 function b64url(input) {
-  var bytes  = (typeof input === 'string') ? Utilities.newBlob(input).getBytes() : input;
+  var bytes = (typeof input === 'string') ? Utilities.newBlob(input).getBytes() : input;
   return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
 }
 
