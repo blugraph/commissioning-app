@@ -731,7 +731,9 @@ const CFG = {
   templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ',
   scopes: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly',
   // Apps Script Web App URL — update after deploying apps-script/Code.gs
-  tokenEndpoint: localStorage.getItem('tokenEndpoint') || '',
+  // Hardcoded so all phones work without manual settings configuration.
+  // localStorage override still works if a custom URL is saved.
+  tokenEndpoint: localStorage.getItem('tokenEndpoint') || 'https://script.google.com/macros/s/AKfycbyTkAgZzPTmCgksLj-DVeizsEtOgQHIwKXDXOhLasCA8xntAzu6ESnbXGtMX7hvkL2Y/exec',
   // Column indices (0-based) in the master sheet
   cols: {
     stationId:   1,   // B
