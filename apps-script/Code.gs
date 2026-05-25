@@ -19,13 +19,13 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var body = {};
-    if (e.postData && e.postData.contents) {
-      body = JSON.parse(e.postData.contents);
-    }
+    // NOTE: Apps Script 302-redirects POST requests, which drops the body.
+    // All routing parameters are passed as URL query params (?action=...)
+    // because those survive the redirect intact.
+    var action = (e.parameter && e.parameter.action) || 'getToken';
 
-    switch (body.action) {
-      case 'copyTemplate': return copyTemplateAction(body);
+    switch (action) {
+      case 'copyTemplate': return copyTemplateAction(e.parameter);
       default:             return getTokenAction();
     }
   } catch (err) {
@@ -41,13 +41,13 @@ function doPost(e) {
 // After copying, it grants the service account editor access so it can
 // fill in the text markers and insert photos.
 
-function copyTemplateAction(body) {
-  var template = DriveApp.getFileById(body.templateId);
-  var folder   = body.parentId
-    ? DriveApp.getFolderById(body.parentId)
+function copyTemplateAction(params) {
+  var template = DriveApp.getFileById(params.templateId);
+  var folder   = params.parentId
+    ? DriveApp.getFolderById(params.parentId)
     : DriveApp.getRootFolder();
 
-  var copy = template.makeCopy(body.filename, folder);
+  var copy = template.makeCopy(params.filename, folder);
 
   // Make the doc editable by anyone with the link so the service account
   // (and the Docs/Drive API calls from the app) can fill in text and photos
