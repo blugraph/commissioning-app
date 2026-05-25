@@ -329,7 +329,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       </select>
     </div>
     <div class="form-group">
-      <label class="form-label">Custom drain type (overrides selection above)</label>
+      <label class="form-label">Custom drain type (Optional)</label>
       <input class="form-input" id="drainCustom" type="text"
         placeholder="e.g. Box Culvert" oninput="setDrainCustom(this.value)">
     </div>
@@ -340,7 +340,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
   <!-- X27 numeric measurement + X28 calculated -->
   <div class="card">
-    <div class="card-title">X27 Drain Measurement &amp; X28</div>
+    <div class="card-title">Cope to side invert / Invert</div>
     <div class="form-group">
       <label class="form-label">Drain measurement – X27 (m)</label>
       <input class="form-input" id="x27MeasInput" type="number" step="0.001"
@@ -378,18 +378,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);
           <th style="width:60px;">Pass ✔</th>
         </tr></thead>
         <tbody>
-          <tr>
-            <td class="lbl" style="padding:8px;font-size:.8rem;">
-              SIM 1 – Primary network connectivity verified; data transmission confirmed
-            </td>
-            <td><span class="tick">✔</span></td>
-          </tr>
-          <tr>
-            <td class="lbl" style="padding:8px;font-size:.8rem;">
-              SIM 2 – Secondary network connectivity verified; failover tested
-            </td>
-            <td><span class="tick">✔</span></td>
-          </tr>
         </tbody>
       </table>
     </div>
@@ -407,14 +395,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
   <!-- 3-point sensors P15 -->
   <div class="card">
-    <div class="card-title">P15 – 3-Point Sensors</div>
+    <div class="card-title">P15 – 3-Point Calibration</div>
     <div class="photo-zone" id="P15Zone">
       <input type="file" accept="image/*" id="photoP15" onchange="handlePhoto(this,'P15','P15Preview','P15Zone')">
       <span class="ph-icon">📷</span>
-      <span class="ph-label">3-Point Sensors Installation</span>
+      <span class="ph-label">Web screenshot of 3 point calibration values</span>
       <span class="ph-sub">Tap to capture photo</span>
     </div>
-    <img id="P15Preview" class="photo-preview" alt="3-point sensors photo">
+    <img id="P15Preview" class="photo-preview" alt="3-point calibration screenshot">
   </div>
 
   <div class="bottom-bar">
@@ -544,7 +532,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       Photo of station ID label affixed to data logger enclosure:
     </p>
     <div class="photo-zone" id="P11Zone">
-      <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',500,500)">
+      <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',350,350)">
       <span class="ph-icon">📷</span>
       <span class="ph-label">Station ID Label</span>
       <span class="ph-sub">Tap to capture photo</span>
@@ -633,7 +621,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
   <div class="card">
     <div class="card-title">P10 – Water Level</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of water level / staff gauge reading</p>
     <div class="photo-zone" id="P10Zone">
       <input type="file" accept="image/*" id="photoP10" onchange="handlePhoto(this,'P10','P10Preview','P10Zone')">
       <span class="ph-icon">📷</span>
@@ -682,9 +669,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);
     </button>
     <div id="saveSpinner" style="display:none"><div class="spinner"></div></div>
     <div id="saveResult" style="margin-top:12px;display:none;"></div>
-    <div class="divider"></div>
-    <button class="btn btn-secondary btn-full mt-8" style="font-size:.82rem;opacity:.75;"
-      onclick="fillTestPhotos()">🧪 Fill Test Photos (skip real photos)</button>
     <div class="divider"></div>
     <button class="btn btn-secondary btn-full mt-8" onclick="startNewCommissioning()">
       🔄 New Station
@@ -1454,8 +1438,8 @@ function triggerPhoto(inputId) {
 function handlePhoto(input, key, previewId, zoneId, maxW, maxH) {
   const file = input.files[0];
   if (!file) return;
-  // Default 1920×1440 — high enough that text in photos remains legible
-  resizeAndStore(file, key, previewId, zoneId, maxW || 1920, maxH || 1440);
+  // Default 1344×1008 (1920×1440 reduced by 30%) — keeps text legible at lower payload
+  resizeAndStore(file, key, previewId, zoneId, maxW || 1344, maxH || 1008);
 }
 
 function resizeAndStore(file, key, previewId, zoneId, maxW, maxH) {
@@ -1716,17 +1700,11 @@ td{padding:5px 6px;border:1px solid #CFD8DC;}
 </table>
 
 <h2>Dual SIM Card Connectivity</h2>
-<table>
-  <tr><td>SIM 1 – Primary network connectivity verified; data transmission confirmed</td>
-    <td style="width:60px;text-align:center;" class="tick">✔</td></tr>
-  <tr><td>SIM 2 – Secondary network connectivity verified; failover tested</td>
-    <td style="width:60px;text-align:center;" class="tick">✔</td></tr>
-</table>
 <p style="margin:8px 0 4px;">P14 – Dual SIM Cards photo:</p>
 ${imgTag('P14','max-width:100%;max-height:400px;object-fit:contain;')}
 
-<h2>3-Point Sensors</h2>
-<p style="margin:8px 0 4px;">P15 – 3-Point Sensors photo:</p>
+<h2>3-Point Calibration</h2>
+<p style="margin:8px 0 4px;">P15 – Web screenshot of 3 point calibration values:</p>
 ${imgTag('P15','max-width:100%;max-height:400px;object-fit:contain;')}
 
 <h2>Part 3 – Water Level Measurement Validation</h2>
@@ -1930,7 +1908,7 @@ async function resizePhoto(dataUrl, maxW, maxH, quality) {
 // Apps Script uses DocumentApp to insert them — no Drive temp files.
 async function fillDocPhotos(docId) {
   const excluded = getExcludedPhotos();
-  const MAX_W = 1200, MAX_H = 1600, QUALITY = 0.78;
+  const MAX_W = 840, MAX_H = 1120, QUALITY = 0.78;
   const el = document.getElementById('saveResult');
 
   // Resize every non-excluded photo that has data
