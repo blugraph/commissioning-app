@@ -683,6 +683,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);
     <div id="saveSpinner" style="display:none"><div class="spinner"></div></div>
     <div id="saveResult" style="margin-top:12px;display:none;"></div>
     <div class="divider"></div>
+    <button class="btn btn-secondary btn-full mt-8" style="font-size:.82rem;opacity:.75;"
+      onclick="fillTestPhotos()">🧪 Fill Test Photos (skip real photos)</button>
+    <div class="divider"></div>
     <button class="btn btn-secondary btn-full mt-8" onclick="startNewCommissioning()">
       🔄 New Station
     </button>
@@ -929,6 +932,63 @@ function saveTokenEndpoint(val) {
   localStorage.setItem('tokenEndpoint', CFG.tokenEndpoint);
   const st = document.getElementById('endpointStatus');
   if (st) { st.style.display = 'block'; setTimeout(() => { st.style.display = 'none'; }, 2000); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEST MODE – generate placeholder photos for every slot
+// ═══════════════════════════════════════════════════════════════════
+function fillTestPhotos() {
+  const allKeys = ['P1','P2','P3','P4','P5','P6','P7',
+                   'P10','P11','P12','P13','P14','P15','P16'];
+  const palette = [
+    '#1565C0','#2E7D32','#C62828','#FF8F00','#4527A0',
+    '#00695C','#37474F','#AD1457','#00838F','#558B2F',
+    '#E65100','#283593','#6A1B9A','#1B5E20',
+  ];
+
+  allKeys.forEach((key, i) => {
+    const W = 800, H = 600;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Coloured background
+    ctx.fillStyle = palette[i % palette.length];
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid pattern
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // Label
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, H/2 - 90, W, 180);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 100px sans-serif';
+    ctx.fillText(key, W/2, H/2 - 18);
+    ctx.font = '28px sans-serif';
+    ctx.fillText('TEST PHOTO', W/2, H/2 + 50);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    STATE.photos[key] = dataUrl;
+    STATE.photoAspects = STATE.photoAspects || {};
+    STATE.photoAspects[key] = W / H;
+
+    // Update any visible previews / zones
+    const prev = document.getElementById(key + 'Preview');
+    if (prev) { prev.src = dataUrl; prev.classList.add('show'); }
+    const zone = document.getElementById(key + 'Zone');
+    if (zone) zone.style.border = '2px solid var(--success)';
+  });
+
+  document.getElementById('saveResult').innerHTML =
+    '<div style="background:#E8F5E9;border-radius:8px;padding:10px;color:#1B5E20;">' +
+    '🧪 ' + allKeys.length + ' test photos loaded. Ready to Save to Drive.</div>';
+  document.getElementById('saveResult').style.display = 'block';
 }
 
 // ═══════════════════════════════════════════════════════════════════
