@@ -2015,9 +2015,19 @@ async function deleteDriveFile(fileId) {
 
 // ── Read a Google Doc structure ───────────────────────────────────
 async function readDoc(docId) {
-  const r = await fetch(`https://docs.googleapis.com/v1/documents/${docId}`,
-    { headers:{ Authorization:`Bearer ${STATE.accessToken}` } });
-  return r.json();
+  // Retry up to 5 times with backoff — permission granted by Apps Script
+  // can take a few seconds to propagate before the service account can read.
+  let lastErr;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1500 * attempt));
+    const resp = await fetch(`https://docs.googleapis.com/v1/documents/${docId}`,
+      { headers: { Authorization: `Bearer ${STATE.accessToken}` } });
+    const data = await resp.json();
+    if (data.body) return data;
+    lastErr = data.error?.message || `HTTP ${resp.status}`;
+    if (resp.status !== 403 && resp.status !== 404) break; // don't retry other errors
+  }
+  throw new Error('Could not read document: ' + lastErr);
 }
 
 // ── Docs API batchUpdate ──────────────────────────────────────────
