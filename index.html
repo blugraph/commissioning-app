@@ -1770,19 +1770,15 @@ async function saveToGoogleDrive() {
     //      Drive quota, not the service account's zero-quota storage).
     //      Apps Script then grants the service account editor access so we
     //      can fill in text markers and photos with the steps below.
-    // Pass all params as URL query string — Apps Script drops the POST body
-    // during its 302 redirect, but query parameters survive intact.
+    // Use GET for copyTemplate — Apps Script GET params always survive the
+    // 302 redirect intact, unlike POST bodies which are dropped.
     const copyParams = new URLSearchParams({
       action: 'copyTemplate',
       templateId: CFG.templateDocId,
       filename,
       ...(parentId ? { parentId } : {}),
     });
-    const copyResp = await fetch(`${CFG.tokenEndpoint}?${copyParams}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: '{}',
-    });
+    const copyResp = await fetch(`${CFG.tokenEndpoint}?${copyParams}`);
     if (!copyResp.ok) {
       const e = await copyResp.json().catch(() => ({}));
       throw new Error('Template copy failed: ' + (e.error || copyResp.status));

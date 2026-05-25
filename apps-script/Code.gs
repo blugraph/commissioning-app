@@ -13,21 +13,21 @@
 
 // ── Entry points ──────────────────────────────────────────────────
 
+// GET  → used for copyTemplate (params always survive the redirect)
+// POST → used for token requests only
 function doGet(e) {
-  return respond({ status: 'ok' });
+  try {
+    var action = (e.parameter && e.parameter.action) || '';
+    if (action === 'copyTemplate') return copyTemplateAction(e.parameter);
+    return respond({ status: 'ok' });
+  } catch (err) {
+    return respond({ error: err.message });
+  }
 }
 
 function doPost(e) {
   try {
-    // NOTE: Apps Script 302-redirects POST requests, which drops the body.
-    // All routing parameters are passed as URL query params (?action=...)
-    // because those survive the redirect intact.
-    var action = (e.parameter && e.parameter.action) || 'getToken';
-
-    switch (action) {
-      case 'copyTemplate': return copyTemplateAction(e.parameter);
-      default:             return getTokenAction();
-    }
+    return getTokenAction();
   } catch (err) {
     return respond({ error: err.message });
   }
