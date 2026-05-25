@@ -95,48 +95,47 @@ function fillPhotosAction(body) {
   return respond({ ok: true, errors: errors });
 }
 
-// Finds a cell or paragraph whose entire text equals the marker (e.g. "P1")
-// and replaces its content with a sized inline image.
+// Uses body.findText() — searches the ENTIRE document recursively,
+// including nested tables, so no manual tree walking needed.
+// Finds the paragraph whose full text (trimmed) equals the marker,
+// clears it, then inserts the image directly in its place.
 function replaceMarkerWithImage(body, marker, blob) {
-  var re = new RegExp('^\\s*' + marker + '\\s*$');
+  var hit = body.findText(marker);
+  while (hit) {
+    var textEl   = hit.getElement();          // Text element
+    var para     = textEl.getParent();        // Paragraph containing the text
+    var paraText = para.getText().trim();
 
-  // ── Search tables ──────────────────────────────────────────────
-  var numChildren = body.getNumChildren();
-  for (var i = 0; i < numChildren; i++) {
-    var child = body.getChild(i);
-    if (child.getType() !== DocumentApp.ElementType.TABLE) continue;
-    var table = child.asTable();
-    for (var r = 0; r < table.getNumRows(); r++) {
-      var row = table.getRow(r);
-      for (var c = 0; c < row.getNumCells(); c++) {
-        var cell = row.getCell(c);
-        if (!re.test(cell.getText())) continue;
-        cell.clear();
-        var para = cell.appendParagraph('');
-        para.setAttributes({ [DocumentApp.Attribute.SPACING_BEFORE]: 0,
-                             [DocumentApp.Attribute.SPACING_AFTER]:  0 });
-        var img = para.appendInlineImage(blob);
+    // Only replace if the entire paragraph is exactly this marker
+    // (avoids matching "P1" inside "P10", "P11", etc.)
+    if (paraText === marker) {
+      var container = para.getParent();
+
+      if (container.getType() === DocumentApp.ElementType.TABLE_CELL) {
+        // ── Marker is inside a table cell ──────────────────────
+        var cell = container.asTableCell();
+        cell.clear();                         // remove the Pn text
+        var p = cell.appendParagraph('');
+        p.setAttributes({
+          [DocumentApp.Attribute.SPACING_BEFORE]: 0,
+          [DocumentApp.Attribute.SPACING_AFTER]:  0
+        });
+        var img = p.appendInlineImage(blob);
         sizeImage(img);
-        return true;
+
+      } else {
+        // ── Marker is a standalone paragraph in the body ────────
+        var idx = body.getChildIndex(para);
+        var p   = body.insertParagraph(idx, '');
+        var img = p.appendInlineImage(blob);
+        sizeImage(img);
+        para.removeFromParent();              // remove the Pn paragraph
       }
+      return true;
     }
+    hit = body.findText(marker, hit);         // continue searching
   }
-
-  // ── Search standalone paragraphs ───────────────────────────────
-  for (var j = 0; j < body.getNumChildren(); j++) {
-    var el = body.getChild(j);
-    if (el.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
-    var para = el.asParagraph();
-    if (!re.test(para.getText())) continue;
-    var idx = body.getChildIndex(para);
-    var newPara = body.insertParagraph(idx, '');
-    var img = newPara.appendInlineImage(blob);
-    sizeImage(img);
-    para.removeFromParent();
-    return true;
-  }
-
-  return false;
+  return false;                               // marker not found
 }
 
 // Scale image to fit within the doc's text width (≈ 460 pt for A4).
