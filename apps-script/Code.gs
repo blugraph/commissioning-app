@@ -75,23 +75,30 @@ function fillPhotosAction(body) {
   var photos = body.photos || {};
   if (!docId) return respond({ error: 'Missing docId' });
 
-  var doc    = DocumentApp.openById(docId);
+  var keys = Object.keys(photos);
+  console.log('fillPhotosAction: docId=' + docId + ', photos=[' + keys.join(',') + ']');
+
+  var doc     = DocumentApp.openById(docId);
   var docBody = doc.getBody();
   var errors  = [];
 
   for (var key in photos) {
     try {
       var b64   = photos[key].replace(/^data:image\/\w+;base64,/, '');
+      if (!b64) { errors.push(key + ': empty base64 data'); continue; }
       var bytes = Utilities.base64Decode(b64);
       var blob  = Utilities.newBlob(bytes, 'image/jpeg', key + '.jpg');
       var found = replaceMarkerWithImage(docBody, key, blob);
+      console.log('fillPhotosAction: ' + key + ' → ' + (found ? 'inserted ✓' : 'MARKER NOT FOUND'));
       if (!found) errors.push(key + ': marker not found in doc');
     } catch(err) {
+      console.log('fillPhotosAction: ' + key + ' → error: ' + err.message);
       errors.push(key + ': ' + err.message);
     }
   }
 
   doc.saveAndClose();
+  console.log('fillPhotosAction: done, errors=[' + errors.join('; ') + ']');
   return respond({ ok: true, errors: errors });
 }
 
@@ -113,9 +120,11 @@ function replaceMarkerWithImage(body, marker, blob) {
 
       if (container.getType() === DocumentApp.ElementType.TABLE_CELL) {
         // ── Marker is inside a table cell ──────────────────────
-        var cell = container.asTableCell();
-        cell.clear();                         // remove the Pn text
-        var p = cell.appendParagraph('');
+        // Remove ONLY the Pn paragraph – keep the title paragraph(s) above it
+        var cell     = container.asTableCell();
+        var paraIdx  = cell.getChildIndex(para);
+        para.removeFromParent();              // remove only the "Pn" marker
+        var p = cell.insertParagraph(paraIdx, '');
         p.setAttributes({
           [DocumentApp.Attribute.SPACING_BEFORE]: 0,
           [DocumentApp.Attribute.SPACING_AFTER]:  0

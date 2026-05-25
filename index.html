@@ -1907,8 +1907,9 @@ function getExcludedPhotos() {
 // Draws onto a canvas at reduced size, returns a JPEG data URL.
 // Real camera photos (3–12 MP) are shrunk to ≤ MAX_W × MAX_H px.
 async function resizePhoto(dataUrl, maxW, maxH, quality) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    img.onerror = () => reject(new Error('Failed to load photo for resizing'));
     img.onload = () => {
       let w = img.width, h = img.height;
       if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
@@ -1928,21 +1929,31 @@ async function resizePhoto(dataUrl, maxW, maxH, quality) {
 async function fillDocPhotos(docId) {
   const excluded = getExcludedPhotos();
   const MAX_W = 1200, MAX_H = 1600, QUALITY = 0.78;
+  const el = document.getElementById('saveResult');
 
   // Resize every non-excluded photo that has data
   const photos = {};
   for (const [key, dataUrl] of Object.entries(STATE.photos || {})) {
     if (!dataUrl || excluded.includes(key)) continue;
-    photos[key] = await resizePhoto(dataUrl, MAX_W, MAX_H, QUALITY);
+    try {
+      photos[key] = await resizePhoto(dataUrl, MAX_W, MAX_H, QUALITY);
+    } catch(e) {
+      console.warn(`fillDocPhotos: could not resize ${key}:`, e.message);
+    }
   }
 
   const count = Object.keys(photos).length;
   if (!count) {
-    console.log('fillDocPhotos: no photos to embed');
+    console.warn('fillDocPhotos: STATE.photos is empty — no photos captured');
+    if (el) el.innerHTML += `<div style="margin-top:8px;padding:8px;background:#FFF3E0;
+      border-radius:6px;font-size:.82rem;color:#E65100;">
+      ⚠️ No photos were embedded — capture photos before saving to Drive.</div>`;
     return;
   }
 
-  console.log(`fillDocPhotos: sending ${count} resized photos to Apps Script…`);
+  console.log(`fillDocPhotos: sending ${count} photo(s) to Apps Script…`);
+  if (el) el.innerHTML += `<div style="font-size:.82rem;color:#555;margin-top:6px;">
+    📷 Embedding ${count} photo(s) into document…</div>`;
 
   // Use text/plain to avoid CORS preflight (same as token fetch).
   // Apps Script reads e.postData.contents and parses JSON itself.
@@ -1951,16 +1962,37 @@ async function fillDocPhotos(docId) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'fillPhotos', docId, photos }),
   });
-  const result = await resp.json();
+
+  // Read raw text first so we can log it if parsing fails
+  const raw = await resp.text();
+  console.log('fillDocPhotos raw response:', raw);
+
+  let result;
+  try { result = JSON.parse(raw); }
+  catch(e) {
+    throw new Error('Photo embed: unexpected response from Apps Script — ' + raw.slice(0, 300));
+  }
+
+  // Guard: old Code.gs deployments return { token, expires_in } instead of { ok, errors }
+  if (result.token || result.access_token) {
+    throw new Error(
+      'Apps Script returned a token instead of embedding photos. ' +
+      'The deployed Code.gs is outdated — please deploy a NEW version: ' +
+      'Apps Script → Deploy → Manage deployments → Edit → New version → Deploy.'
+    );
+  }
 
   if (result.error) throw new Error('Photo embed: ' + result.error);
+
   if (result.errors && result.errors.length) {
-    console.warn('Some photos had issues:', result.errors.join('; '));
-    const el = document.getElementById('saveResult');
+    console.warn('fillDocPhotos: some markers not found:', result.errors);
     if (el) el.innerHTML += `<div style="margin-top:8px;font-size:.82rem;color:#B71C1C;">
-      ⚠️ Some photos could not be embedded: ${result.errors.join('; ')}</div>`;
+      ⚠️ ${result.errors.join('<br>')}</div>`;
+  } else if (result.ok) {
+    console.log(`fillDocPhotos: ${count} photo(s) embedded ✓`);
+    if (el) el.innerHTML += `<div style="font-size:.82rem;color:#2E7D32;margin-top:4px;">
+      ✅ ${count} photo(s) embedded successfully.</div>`;
   }
-  console.log('fillDocPhotos: done ✓');
 }
 
 // ── Upload a data-URL as a temp Drive file, return file ID ────────
