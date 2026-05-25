@@ -42,7 +42,6 @@ function doPost(e) {
 // fill in the text markers and insert photos.
 
 function copyTemplateAction(body) {
-  var sa       = JSON.parse(PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT'));
   var template = DriveApp.getFileById(body.templateId);
   var folder   = body.parentId
     ? DriveApp.getFolderById(body.parentId)
@@ -50,8 +49,10 @@ function copyTemplateAction(body) {
 
   var copy = template.makeCopy(body.filename, folder);
 
-  // Grant service account editor access so the frontend can fill the doc
-  copy.addEditor(sa.client_email);
+  // Make the doc editable by anyone with the link so the service account
+  // (and the Docs/Drive API calls from the app) can fill in text and photos
+  // immediately — no per-user permission propagation delay.
+  copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
 
   return respond({ docId: copy.getId(), url: copy.getUrl() });
 }

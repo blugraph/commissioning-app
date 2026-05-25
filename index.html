@@ -1726,6 +1726,10 @@ async function saveToGoogleDrive() {
     }
     const copyData = await copyResp.json();
     if (copyData.error) throw new Error('Template copy failed: ' + copyData.error);
+    if (!copyData.docId) throw new Error(
+      'Template copy returned no document ID. ' +
+      'Please redeploy the Apps Script with the latest Code.gs (New version → Deploy).'
+    );
     const newDocId = copyData.docId;
 
     // 2 ── Replace X1–X25 text markers in one batchUpdate
