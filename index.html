@@ -1794,9 +1794,8 @@ async function saveToGoogleDrive() {
     // 2 ── Replace X1–X25 text markers in one batchUpdate
     await fillDocText(newDocId);
 
-    // 3 ── Find P1–P16 photo markers, embed each photo, delete temp files
-    await fillDocPhotos(newDocId);
-
+    // 3 ── Show success card first (so the Drive link is immediately visible),
+    //      then embed photos — fillDocPhotos appends its status below the card.
     const fileUrl = `https://docs.google.com/document/d/${newDocId}/edit`;
     result.innerHTML = `
       <div style="background:#E8F5E9;border-radius:8px;padding:12px;color:#1B5E20;">
@@ -1805,6 +1804,9 @@ async function saveToGoogleDrive() {
         <small>${parentId ? 'Saved to same folder as master spreadsheet.' : 'Saved to Drive root.'}</small>
       </div>`;
     result.style.display = 'block';
+
+    // 4 ── Embed P1–P16 photos (appends status lines below the success card)
+    await fillDocPhotos(newDocId);
 
   } catch(e) {
     result.innerHTML = `<div style="background:#FFEBEE;border-radius:8px;padding:12px;color:#B71C1C;">❌ ${e.message}</div>`;
