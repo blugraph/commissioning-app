@@ -27,6 +27,14 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    var body = {};
+    try {
+      if (e && e.postData && e.postData.contents)
+        body = JSON.parse(e.postData.contents);
+    } catch(_) {}
+    var action = body.action || '';
+    if (action === 'uploadPhoto') return uploadPhotoAction(body);
+    if (action === 'deleteFile')  return deleteFileAction(body);
     return getTokenAction();
   } catch (err) {
     return respond({ error: err.message });
@@ -55,6 +63,31 @@ function copyTemplateAction(params) {
   copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
 
   return respond({ docId: copy.getId(), url: copy.getUrl() });
+}
+
+// ── Action: upload a photo to Drive as script owner ──────────────
+// Receives base64 image data, creates a Drive file owned by the real
+// Google account (not the service account), makes it publicly readable
+// so the Docs API can embed it, and returns the file ID.
+
+function uploadPhotoAction(body) {
+  var b64  = (body.data || '').replace(/^data:image\/\w+;base64,/, '');
+  if (!b64) return respond({ error: 'No image data received' });
+  var bytes = Utilities.base64Decode(b64);
+  var blob  = Utilities.newBlob(bytes, 'image/jpeg', body.filename || 'photo.jpg');
+  var file  = DriveApp.createFile(blob);
+  // Publicly readable so Google Docs API can fetch it for inline embedding
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return respond({ fileId: file.getId() });
+}
+
+// ── Action: trash a temp photo file after embedding ───────────────
+
+function deleteFileAction(body) {
+  try {
+    if (body.fileId) DriveApp.getFileById(body.fileId).setTrashed(true);
+  } catch(_) {} // ignore if already gone
+  return respond({ ok: true });
 }
 
 // ── Action: mint a service-account access token ───────────────────

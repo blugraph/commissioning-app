@@ -2031,48 +2031,36 @@ async function fillDocPhotos(docId) {
 
 // ── Upload a data-URL as a temp Drive file, return file ID ────────
 async function uploadTempPhoto(dataUrl, filename) {
-  const blob     = await (await fetch(dataUrl)).blob();
-  const meta     = { name: filename, mimeType: 'image/jpeg' };
-  const boundary = 'PB_' + Math.random().toString(36).slice(2);
-  const metaStr  = JSON.stringify(meta);
-  const body = new Blob([
-    '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + metaStr + '\r\n' +
-    '--' + boundary + '\r\nContent-Type: image/jpeg\r\n\r\n',
-    blob,
-    '\r\n--' + boundary + '--'
-  ]);
-  const r = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-    { method:'POST', headers:{ Authorization:`Bearer ${STATE.accessToken}`,
-        'Content-Type':`multipart/related; boundary="${boundary}"` }, body }
-  );
-  const d = await r.json();
-  if (!r.ok) throw new Error('Photo upload: ' + (d.error?.message || r.status));
-  return d.id;
+  // Route through Apps Script so the file is owned by the real Google
+  // account (service accounts have no Drive storage quota).
+  const resp = await fetch(CFG.tokenEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'uploadPhoto', data: dataUrl, filename }),
+  });
+  const data = await resp.json();
+  if (!data.fileId) throw new Error('Photo upload: ' + (data.error || 'no fileId returned'));
+  return data.fileId;
 }
 
 // ── Make a Drive file publicly readable (needed for Docs embed) ───
 // Returns true if successful, false otherwise.
 async function makeFilePublic(fileId) {
-  const r = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
-    { method:'POST',
-      headers:{ Authorization:`Bearer ${STATE.accessToken}`, 'Content-Type':'application/json' },
-      body: JSON.stringify({ role:'reader', type:'anyone' }) }
-  );
-  if (!r.ok) {
-    const e = await r.json().catch(()=>({}));
-    console.warn('makeFilePublic failed:', e.error?.message || r.status);
-    return false;
-  }
+  // Apps Script already called setSharing(ANYONE_WITH_LINK, VIEW) during
+  // uploadPhotoAction, so nothing extra is needed here.
   return true;
 }
 
 // ── Delete a Drive file (clean up temp uploads) ───────────────────
 async function deleteDriveFile(fileId) {
+  // Temp files are owned by the Apps Script user, so deletion must also
+  // go through Apps Script (service account cannot delete them).
   try {
-    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`,
-      { method:'DELETE', headers:{ Authorization:`Bearer ${STATE.accessToken}` } });
+    await fetch(CFG.tokenEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteFile', fileId }),
+    });
   } catch(e) { console.warn('Could not delete temp file', fileId); }
 }
 
