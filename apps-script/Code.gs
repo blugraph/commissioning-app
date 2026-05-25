@@ -33,8 +33,7 @@ function doPost(e) {
         body = JSON.parse(e.postData.contents);
     } catch(_) {}
     var action = body.action || '';
-    if (action === 'uploadPhoto') return uploadPhotoAction(body);
-    if (action === 'deleteFile')  return deleteFileAction(body);
+    if (action === 'fillPhotos') return fillPhotosAction(body);
     return getTokenAction();
   } catch (err) {
     return respond({ error: err.message });
@@ -65,29 +64,90 @@ function copyTemplateAction(params) {
   return respond({ docId: copy.getId(), url: copy.getUrl() });
 }
 
-// ── Action: upload a photo to Drive as script owner ──────────────
-// Receives base64 image data, creates a Drive file owned by the real
-// Google account (not the service account), makes it publicly readable
-// so the Docs API can embed it, and returns the file ID.
+// ── Action: embed photos directly into a Google Doc ──────────────
+// Receives base64 JPEGs (already resized on the user's device) and
+// uses DocumentApp to insert them in-place — no Drive temp files.
+//
+// body = { docId, photos: { P1: 'data:image/jpeg;base64,…', … } }
 
-function uploadPhotoAction(body) {
-  var b64  = (body.data || '').replace(/^data:image\/\w+;base64,/, '');
-  if (!b64) return respond({ error: 'No image data received' });
-  var bytes = Utilities.base64Decode(b64);
-  var blob  = Utilities.newBlob(bytes, 'image/jpeg', body.filename || 'photo.jpg');
-  var file  = DriveApp.createFile(blob);
-  // Publicly readable so Google Docs API can fetch it for inline embedding
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return respond({ fileId: file.getId() });
+function fillPhotosAction(body) {
+  var docId  = body.docId;
+  var photos = body.photos || {};
+  if (!docId) return respond({ error: 'Missing docId' });
+
+  var doc    = DocumentApp.openById(docId);
+  var docBody = doc.getBody();
+  var errors  = [];
+
+  for (var key in photos) {
+    try {
+      var b64   = photos[key].replace(/^data:image\/\w+;base64,/, '');
+      var bytes = Utilities.base64Decode(b64);
+      var blob  = Utilities.newBlob(bytes, 'image/jpeg', key + '.jpg');
+      var found = replaceMarkerWithImage(docBody, key, blob);
+      if (!found) errors.push(key + ': marker not found in doc');
+    } catch(err) {
+      errors.push(key + ': ' + err.message);
+    }
+  }
+
+  doc.saveAndClose();
+  return respond({ ok: true, errors: errors });
 }
 
-// ── Action: trash a temp photo file after embedding ───────────────
+// Finds a cell or paragraph whose entire text equals the marker (e.g. "P1")
+// and replaces its content with a sized inline image.
+function replaceMarkerWithImage(body, marker, blob) {
+  var re = new RegExp('^\\s*' + marker + '\\s*$');
 
-function deleteFileAction(body) {
-  try {
-    if (body.fileId) DriveApp.getFileById(body.fileId).setTrashed(true);
-  } catch(_) {} // ignore if already gone
-  return respond({ ok: true });
+  // ── Search tables ──────────────────────────────────────────────
+  var numChildren = body.getNumChildren();
+  for (var i = 0; i < numChildren; i++) {
+    var child = body.getChild(i);
+    if (child.getType() !== DocumentApp.ElementType.TABLE) continue;
+    var table = child.asTable();
+    for (var r = 0; r < table.getNumRows(); r++) {
+      var row = table.getRow(r);
+      for (var c = 0; c < row.getNumCells(); c++) {
+        var cell = row.getCell(c);
+        if (!re.test(cell.getText())) continue;
+        cell.clear();
+        var para = cell.appendParagraph('');
+        para.setAttributes({ [DocumentApp.Attribute.SPACING_BEFORE]: 0,
+                             [DocumentApp.Attribute.SPACING_AFTER]:  0 });
+        var img = para.appendInlineImage(blob);
+        sizeImage(img);
+        return true;
+      }
+    }
+  }
+
+  // ── Search standalone paragraphs ───────────────────────────────
+  for (var j = 0; j < body.getNumChildren(); j++) {
+    var el = body.getChild(j);
+    if (el.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
+    var para = el.asParagraph();
+    if (!re.test(para.getText())) continue;
+    var idx = body.getChildIndex(para);
+    var newPara = body.insertParagraph(idx, '');
+    var img = newPara.appendInlineImage(blob);
+    sizeImage(img);
+    para.removeFromParent();
+    return true;
+  }
+
+  return false;
+}
+
+// Scale image to fit within the doc's text width (≈ 460 pt for A4).
+function sizeImage(img) {
+  var MAX_W = 460; // points  (~16.2 cm on A4 with default margins)
+  var w = img.getWidth();
+  var h = img.getHeight();
+  if (w > MAX_W) {
+    img.setHeight(Math.round(h * MAX_W / w));
+    img.setWidth(MAX_W);
+  }
 }
 
 // ── Action: mint a service-account access token ───────────────────

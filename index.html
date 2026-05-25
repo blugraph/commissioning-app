@@ -1903,166 +1903,68 @@ function getExcludedPhotos() {
   return STATE.canalCondition === 'dry' ? ['P2', 'P16'] : ['P13'];
 }
 
-async function fillDocPhotos(docId) {
-  const doc = await readDoc(docId);
-  const photoOps = [];
-  const PX_RE = /^\s*P(\d+)\s*$/;
-  const excluded = getExcludedPhotos();
-
-  // ── Scan a table cell (entire cell text must be just "Pn") ────────
-  function scanCell(cell) {
-    const txt = cellText(cell).replace(/\n/g, '').trim();
-    const m = txt.match(PX_RE);
-    if (m) {
-      const key = 'P' + m[1];
-      if (STATE.photos[key] && !excluded.includes(key)) {
-        const pos = cellWritePos(cell);
-        if (pos) photoOps.push({ key, idx: pos.idx, delEnd: pos.delEnd });
-      }
-    }
-    // Recurse for nested tables inside this cell
-    scanContent(cell.content);
-  }
-
-  // ── Scan a standalone paragraph element ───────────────────────────
-  function scanParagraph(para) {
-    // Collect all text runs + their ranges
-    const elems = para.elements || [];
-    let fullTxt = '';
-    for (const e of elems) fullTxt += (e.textRun?.content || '');
-    const m = fullTxt.replace(/\n/g, '').trim().match(PX_RE);
-    if (!m) return;
-    const key = 'P' + m[1];
-    if (!STATE.photos[key] || excluded.includes(key)) return;
-    // Find insert position: first element's startIndex, delEnd = last content char
-    if (!elems.length) return;
-    const insertAt = elems[0].startIndex;
-    if (insertAt == null) return;
-    let contentEnd = insertAt;
-    for (const e of elems) {
-      const t = e.textRun?.content ?? '';
-      if (!t || t === '\n') continue;
-      const len = t.endsWith('\n') ? t.length - 1 : t.length;
-      if (len > 0) contentEnd = e.startIndex + len;
-    }
-    photoOps.push({ key, idx: insertAt, delEnd: contentEnd });
-  }
-
-  // ── Main content scanner ──────────────────────────────────────────
-  function scanContent(content) {
-    for (const el of (content || [])) {
-      if (el.paragraph) scanParagraph(el.paragraph);
-      if (el.table) {
-        for (const row of (el.table.tableRows || []))
-          for (const cell of (row.tableCells || []))
-            scanCell(cell);
-      }
-    }
-  }
-  scanContent(doc.body.content);
-
-  if (!photoOps.length) {
-    console.log('fillDocPhotos: no PX markers found (or no photos captured)');
-    return;
-  }
-  photoOps.sort((a, b) => b.idx - a.idx); // highest-index first
-
-  console.log('fillDocPhotos: uploading', photoOps.length, 'photos in parallel...');
-
-  // ── Upload ALL photos to Drive in parallel ────────────────────────
-  const uploadResults = await Promise.all(photoOps.map(async op => {
-    try {
-      const fid = await uploadTempPhoto(STATE.photos[op.key], op.key + '_tmp.jpg');
-      return { op, fid };
-    } catch(e) {
-      console.warn('Upload failed for', op.key, ':', e.message);
-      return { op, fid: null, error: e.message };
-    }
-  }));
-
-  const uploaded = uploadResults.filter(r => r.fid);
-
-  // ── Make all uploaded files public in parallel ────────────────────
-  await Promise.all(uploaded.map(r => makeFilePublic(r.fid)));
-
-  // Brief propagation pause (single wait for all, not per-photo)
-  if (uploaded.length) await new Promise(r => setTimeout(r, 300));
-
-  // ── Insert images sequentially (descending index — already sorted) ─
-  const errors = [];
-  for (const { op, fid } of uploaded) {
-    try {
-      const url = `https://drive.google.com/uc?export=view&id=${fid}`;
-      const reqs = [];
-      if (op.delEnd > op.idx)
-        reqs.push({ deleteContentRange: { range: { startIndex: op.idx, endIndex: op.delEnd } } });
-      // Use stored aspect ratio so text in the photo stays proportional.
-      // Target width ≈ 460 PT (near full text-width of a Google Doc page).
-      const aspect = (STATE.photoAspects || {})[op.key] || (4/3);
-      const docW = 460;
-      const docH = Math.round(docW / aspect);
-      reqs.push({
-        insertInlineImage: {
-          location: { index: op.idx },
-          uri: url,
-          objectSize: {
-            width:  { magnitude: docW, unit: 'PT' },
-            height: { magnitude: docH, unit: 'PT' },
-          },
-        }
-      });
-      await docsApiUpdate(docId, reqs);
-      console.log('Photo', op.key, 'embedded ✓');
-    } catch(e) {
-      console.warn('Photo', op.key, 'insert failed:', e.message);
-      errors.push(op.key + ': ' + e.message);
-    }
-  }
-
-  // ── Delete all temp files in parallel (photos now embedded in doc) ─
-  await Promise.all(uploaded.map(r => deleteDriveFile(r.fid)));
-
-  if (errors.length) {
-    const el = document.getElementById('saveResult');
-    if (el) el.innerHTML += `<div style="margin-top:8px;font-size:.82rem;color:#B71C1C;">
-      ⚠️ Some photos could not be embedded: ${errors.join('; ')}</div>`;
-  }
+// ── Resize a photo on-device before embedding ─────────────────────
+// Draws onto a canvas at reduced size, returns a JPEG data URL.
+// Real camera photos (3–12 MP) are shrunk to ≤ MAX_W × MAX_H px.
+async function resizePhoto(dataUrl, maxW, maxH, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
 }
 
-// ── Upload a data-URL as a temp Drive file, return file ID ────────
-async function uploadTempPhoto(dataUrl, filename) {
-  // Route through Apps Script so the file is owned by the real Google
-  // account (service accounts have no Drive storage quota).
+// ── Embed photos directly into the doc via Apps Script ────────────
+// Photos are resized on-device then sent as base64 in one POST.
+// Apps Script uses DocumentApp to insert them — no Drive temp files.
+async function fillDocPhotos(docId) {
+  const excluded = getExcludedPhotos();
+  const MAX_W = 1200, MAX_H = 1600, QUALITY = 0.78;
+
+  // Resize every non-excluded photo that has data
+  const photos = {};
+  for (const [key, dataUrl] of Object.entries(STATE.photos || {})) {
+    if (!dataUrl || excluded.includes(key)) continue;
+    photos[key] = await resizePhoto(dataUrl, MAX_W, MAX_H, QUALITY);
+  }
+
+  const count = Object.keys(photos).length;
+  if (!count) {
+    console.log('fillDocPhotos: no photos to embed');
+    return;
+  }
+
+  console.log(`fillDocPhotos: sending ${count} resized photos to Apps Script…`);
+
   const resp = await fetch(CFG.tokenEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'uploadPhoto', data: dataUrl, filename }),
+    body: JSON.stringify({ action: 'fillPhotos', docId, photos }),
   });
-  const data = await resp.json();
-  if (!data.fileId) throw new Error('Photo upload: ' + (data.error || 'no fileId returned'));
-  return data.fileId;
+  const result = await resp.json();
+
+  if (result.error) throw new Error('Photo embed: ' + result.error);
+  if (result.errors && result.errors.length) {
+    console.warn('Some photos had issues:', result.errors.join('; '));
+    const el = document.getElementById('saveResult');
+    if (el) el.innerHTML += `<div style="margin-top:8px;font-size:.82rem;color:#B71C1C;">
+      ⚠️ Some photos could not be embedded: ${result.errors.join('; ')}</div>`;
+  }
+  console.log('fillDocPhotos: done ✓');
 }
 
-// ── Make a Drive file publicly readable (needed for Docs embed) ───
-// Returns true if successful, false otherwise.
-async function makeFilePublic(fileId) {
-  // Apps Script already called setSharing(ANYONE_WITH_LINK, VIEW) during
-  // uploadPhotoAction, so nothing extra is needed here.
-  return true;
-}
-
-// ── Delete a Drive file (clean up temp uploads) ───────────────────
-async function deleteDriveFile(fileId) {
-  // Temp files are owned by the Apps Script user, so deletion must also
-  // go through Apps Script (service account cannot delete them).
-  try {
-    await fetch(CFG.tokenEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'deleteFile', fileId }),
-    });
-  } catch(e) { console.warn('Could not delete temp file', fileId); }
-}
+// ── Upload a data-URL as a temp Drive file, return file ID ────────
+// (uploadTempPhoto / makeFilePublic / deleteDriveFile removed —
+//  photos are now embedded directly via Apps Script fillPhotos action,
+//  no temporary Drive files are created.)
 
 // ── Read a Google Doc structure ───────────────────────────────────
 async function readDoc(docId) {
@@ -2102,38 +2004,8 @@ async function docsApiUpdate(docId, requests) {
 
 
 // ── Get plain text content of a single cell ────────────────────────
-function cellText(cell) {
-  return (cell.content || [])
-    .flatMap(p => p.paragraph?.elements || [])
-    .map(e => e.textRun?.content || '')
-    .join('');
-}
-
-// ── Return write info for a cell: {idx, delEnd} ───────────────────
-// Operates ONLY on the first paragraph to avoid crossing paragraph
-// boundaries, which would delete paragraph terminators and corrupt
-// the document structure (causing "insertion index out of bounds").
-function cellWritePos(cell) {
-  const paragraphs = (cell.content || []).filter(el => el.paragraph);
-  if (!paragraphs.length) return null;
-
-  const elements = paragraphs[0].paragraph?.elements || [];
-  if (!elements.length) return null;
-
-  const insertAt = elements[0].startIndex;
-  if (insertAt == null) return null;
-
-  // Walk elements to find the end of real content (exclude trailing \n)
-  let contentEnd = insertAt;
-  for (const el of elements) {
-    const txt = el.textRun?.content ?? '';
-    if (!txt || txt === '\n') continue;       // skip pure-newline elements
-    const len = txt.endsWith('\n') ? txt.length - 1 : txt.length;
-    if (len > 0) contentEnd = el.startIndex + len;
-  }
-
-  return { idx: insertAt, delEnd: contentEnd, hasContent: contentEnd > insertAt };
-}
+// (cellText / cellWritePos removed — no longer needed after switching
+//  to Apps Script-based photo embedding via DocumentApp)
 
 
 
