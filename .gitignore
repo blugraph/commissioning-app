@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Netlify build cache (not needed in repo)
+.netlify/
+
+# Node (if dependencies ever added)
+node_modules/

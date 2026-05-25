@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>WL Station Commissioning</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --primary:#1565C0;--primary-dark:#0D47A1;--primary-light:#E3F2FD;
+  --accent:#FF8F00;--success:#2E7D32;--danger:#C62828;
+  --surface:#fff;--bg:#F4F6F8;--text:#212121;--text2:#616161;
+  --border:#CFD8DC;--radius:8px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  overflow-x:hidden;}
+
+/* ── Header ── */
+.app-bar{
+  background:var(--primary);color:#fff;
+  position:sticky;top:0;z-index:200;
+  padding:0 12px;
+  display:flex;align-items:center;gap:10px;
+  min-height:56px;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+.app-bar h1{font-size:1rem;font-weight:600;flex:1;}
+.app-bar .back-btn{
+  background:none;border:none;color:#fff;
+  font-size:1.4rem;cursor:pointer;padding:4px 8px;line-height:1;
+}
+.progress-strip{height:3px;background:rgba(255,255,255,.3);}
+.progress-fill{height:100%;background:#FFD54F;transition:width .3s;}
+
+/* ── Pages ── */
+.page{display:none;padding-bottom:88px;min-height:calc(100vh - 59px);}
+.page.active{display:block;}
+
+/* ── Bottom nav ── */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;padding:10px 12px;
+  box-shadow:0 -2px 8px rgba(0,0,0,.12);
+  display:flex;gap:10px;z-index:200;
+}
+
+/* ── Cards ── */
+.card{background:var(--surface);border-radius:var(--radius);
+  padding:16px;margin:10px 12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.card-title{
+  font-size:.95rem;font-weight:700;color:var(--primary);
+  margin-bottom:12px;padding-bottom:8px;
+  border-bottom:2px solid var(--primary-light);
+}
+.section-hdr{
+  background:var(--primary-dark);color:#fff;
+  padding:9px 12px;font-weight:600;font-size:.88rem;
+}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;padding:13px 20px;border:none;border-radius:var(--radius);
+  font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;
+  text-align:center;
+}
+.btn-full{width:100%;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:active{background:var(--primary-dark);}
+.btn-secondary{background:#fff;color:var(--primary);border:2px solid var(--primary);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ── Forms ── */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:.82rem;color:var(--text2);
+  margin-bottom:5px;font-weight:500;}
+.form-input{
+  width:100%;padding:12px;border:1.5px solid var(--border);
+  border-radius:var(--radius);font-size:1rem;background:#fff;color:var(--text);
+}
+.form-input:focus{outline:none;border-color:var(--primary);}
+
+/* ── Hero ── */
+.lookup-hero{
+  background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+  color:#fff;padding:32px 20px 28px;text-align:center;
+}
+.lookup-hero h2{font-size:1.4rem;margin-bottom:6px;}
+.lookup-hero p{opacity:.82;font-size:.88rem;}
+.lookup-hero .wave{margin-top:16px;font-size:2.5rem;}
+
+/* ── Station badge ── */
+.station-badge{
+  background:var(--primary-light);border:2px solid var(--primary);
+  border-radius:var(--radius);padding:14px;text-align:center;
+}
+.station-badge .sname{font-size:1.2rem;font-weight:700;color:var(--primary);}
+.station-badge .sid{color:var(--text2);font-size:.82rem;margin-top:4px;}
+
+/* ── Checklist table ── */
+.chk-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.chk-table th{
+  background:var(--primary);color:#fff;
+  padding:7px 8px;text-align:left;white-space:nowrap;
+}
+.chk-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+.chk-table tr.sub-row td:first-child{padding-left:22px;color:var(--text2);}
+.tick{color:var(--success);font-weight:700;font-size:1.05rem;}
+.cross{color:var(--danger);font-weight:700;}
+
+/* ── Measurement table ── */
+.meas-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.meas-table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:500px;}
+.meas-table th{
+  background:var(--primary);color:#fff;
+  padding:7px 6px;text-align:center;white-space:nowrap;
+}
+.meas-table td{padding:6px 6px;border:1px solid var(--border);text-align:center;}
+.meas-table .lbl{text-align:left;font-weight:500;}
+.meas-table .sub-lbl{padding-left:14px;color:var(--text2);font-style:italic;}
+.meas-table .calc{background:#E8F5E9;color:#1B5E20;font-family:monospace;}
+.meas-table .na{color:#bbb;}
+
+/* ── Photo capture ── */
+.photo-wrap{margin:10px 0;}
+.photo-zone{
+  border:2.5px dashed var(--primary);border-radius:var(--radius);
+  padding:22px 16px;text-align:center;
+  background:linear-gradient(135deg,#E3F2FD 0%,#F8FBFF 100%);
+  position:relative;cursor:pointer;transition:border-color .2s,background .2s;
+}
+.photo-zone:active{background:#DCEEFB;}
+.photo-zone input[type=file]{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  opacity:0;cursor:pointer;
+}
+.photo-zone .ph-icon{font-size:2.8rem;display:block;margin-bottom:8px;line-height:1;}
+.photo-zone .ph-label{
+  color:var(--primary-dark);font-size:1rem;font-weight:700;
+  display:block;line-height:1.4;letter-spacing:.01em;
+}
+.photo-zone .ph-sub{
+  color:var(--text2);font-size:.8rem;display:block;margin-top:4px;
+}
+.photo-preview{
+  width:100%;height:auto;max-height:500px;
+  object-fit:contain;border-radius:var(--radius);
+  display:none;margin-top:10px;border:1px solid var(--border);
+}
+.photo-preview.show{display:block;}
+.photo-preview.sq{max-height:400px;max-width:400px;margin:8px auto;}
+
+/* ── Toggle buttons (dry/water) ── */
+.toggle-group{display:flex;gap:8px;margin:10px 0;}
+.toggle-item{
+  flex:1;padding:11px;border:2px solid var(--border);
+  border-radius:var(--radius);background:#fff;
+  font-weight:600;cursor:pointer;text-align:center;
+  transition:all .2s;font-size:.95rem;
+}
+.toggle-item.active{
+  background:var(--primary);color:#fff;border-color:var(--primary);
+}
+
+/* ── Calc display ── */
+.calc-row{
+  background:#E8F5E9;border-radius:var(--radius);
+  padding:10px 12px;margin:8px 0;font-size:.88rem;
+}
+.calc-row .label{color:var(--text2);font-size:.78rem;margin-bottom:2px;}
+.calc-row .value{font-weight:700;font-family:monospace;font-size:1rem;color:#1B5E20;}
+
+/* ── Spinner ── */
+.spinner{
+  width:38px;height:38px;
+  border:4px solid var(--primary-light);
+  border-top-color:var(--primary);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:20px auto;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Chip / badge ── */
+.chip{
+  display:inline-block;padding:3px 10px;border-radius:12px;
+  font-size:.75rem;font-weight:600;
+}
+.chip-ok{background:#E8F5E9;color:#2E7D32;}
+.chip-warn{background:#FFF8E1;color:#E65100;}
+
+/* ── Info box ── */
+.info-box{
+  background:var(--primary-light);border-left:4px solid var(--primary);
+  padding:10px 12px;border-radius:0 var(--radius) var(--radius) 0;
+  margin:8px 0;font-size:.84rem;line-height:1.5;
+}
+
+/* ── Modal ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:500;align-items:center;justify-content:center;padding:16px;
+}
+.modal-bg.show{display:flex;}
+.modal-box{
+  background:#fff;border-radius:12px;padding:22px;
+  max-width:460px;width:100%;max-height:85vh;overflow-y:auto;
+}
+.modal-box h3{color:var(--primary);margin-bottom:14px;}
+.modal-box ol{padding-left:18px;line-height:2;font-size:.88rem;}
+.modal-box code{background:#F5F5F5;padding:2px 5px;border-radius:3px;font-size:.82rem;}
+
+/* misc */
+.divider{height:1px;background:var(--border);margin:10px 0;}
+.text-center{text-align:center;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.row{display:flex;gap:10px;}
+.row .btn{flex:1;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     APP BAR
+════════════════════════════════════════════ -->
+<div class="app-bar" id="appBar">
+  <button class="back-btn" id="backBtn" onclick="goBack()" style="display:none">&#8592;</button>
+  <h1 id="appBarTitle">WL Station Commissioning</h1>
+</div>
+<div class="progress-strip"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 1 – STATION LOOKUP
+════════════════════════════════════════════ -->
+<div class="page active" id="page-lookup">
+  <div class="lookup-hero">
+    <div class="wave">🌊</div>
+    <h2>Station Commissioning</h2>
+    <p>Water Level Monitoring System</p>
+  </div>
+
+  <div class="card" id="lookupCard">
+    <div class="card-title">Enter Station ID</div>
+    <div class="form-group">
+      <label class="form-label">Station ID</label>
+      <input class="form-input" id="stationIdInput" type="text"
+        placeholder="e.g. WL-001" autocomplete="off" autocapitalize="characters"
+        onkeydown="if(event.key==='Enter') lookupStation()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="lookupStation()">
+      🔍 Look Up Station
+    </button>
+    <div id="lookupSpinner" style="display:none"><div class="spinner"></div></div>
+    <div id="lookupError" style="color:var(--danger);font-size:.84rem;margin-top:8px;display:none;"></div>
+    <div id="stationResult" style="display:none;margin-top:14px;">
+      <div class="station-badge">
+        <div class="sname" id="resultName"></div>
+        <div class="sid" id="resultId"></div>
+      </div>
+      <button class="btn btn-primary btn-full mt-12" onclick="startCommissioning()">
+        ▶ Start Commissioning
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 2 – INDICATORS
+════════════════════════════════════════════ -->
+<div class="page" id="page-indicators">
+
+  <!-- Sensor Type X26 -->
+  <div class="section-hdr">Indicator Selection</div>
+  <div class="card">
+    <div class="card-title">X26 – Sensor Type</div>
+    <div class="toggle-group">
+      <div class="toggle-item active" id="sensorHydro" onclick="setSensorType('Hydrostatic')">💧 Hydrostatic</div>
+      <div class="toggle-item" id="sensorRadar" onclick="setSensorType('Radar')">📡 Radar</div>
+    </div>
+  </div>
+
+  <!-- Drain Type X29 (text label) -->
+  <div class="card">
+    <div class="card-title">X29 – Drain Type &amp; Sub-type</div>
+    <div class="form-group">
+      <label class="form-label">Open / Closed</label>
+      <div class="toggle-group" style="margin-bottom:10px;">
+        <div class="toggle-item active" id="drainOpen" onclick="setDrainOpen(true)">Open Drain</div>
+        <div class="toggle-item" id="drainClosed" onclick="setDrainOpen(false)">Closed Drain</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Drain Sub-type</label>
+      <select class="form-input" id="drainSubtype" onchange="setDrainSubtype(this.value)">
+        <option value="U-Drain">U-Drain</option>
+        <option value="Trapezoidal">Trapezoidal</option>
+        <option value="Earth Drain">Earth Drain</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Custom drain type (overrides selection above)</label>
+      <input class="form-input" id="drainCustom" type="text"
+        placeholder="e.g. Box Culvert" oninput="setDrainCustom(this.value)">
+    </div>
+    <div style="background:var(--primary-light);border-radius:6px;padding:8px;font-size:.84rem;">
+      X29 = <b id="x29Display">Open – U-Drain</b>
+    </div>
+  </div>
+
+  <!-- X27 numeric measurement + X28 calculated -->
+  <div class="card">
+    <div class="card-title">X27 Drain Measurement &amp; X28</div>
+    <div class="form-group">
+      <label class="form-label">Drain measurement – X27 (m)</label>
+      <input class="form-input" id="x27MeasInput" type="number" step="0.001"
+        placeholder="e.g. 0.450" oninput="updateX27(this.value)">
+    </div>
+    <div style="background:#E8F5E9;border-radius:6px;padding:10px;font-size:.84rem;margin-top:4px;">
+      X28 = <b id="x28Display">—</b> m
+      <span style="color:var(--text2);font-size:.78rem;display:block;margin-top:4px;" id="x28Formula"></span>
+    </div>
+  </div>
+
+  <!-- X21 auto-calculated + X23 -->
+  <div class="card">
+    <div class="card-title">X21 &amp; X23</div>
+    <div style="background:#E3F2FD;border-radius:6px;padding:10px;font-size:.84rem;margin-bottom:10px;">
+      X21 (auto) = X19 + offset = <b id="x21AutoDisplay">—</b> m
+    </div>
+    <div class="form-group">
+      <label class="form-label">Override X21 (leave blank to use auto value)</label>
+      <input class="form-input" id="x21OverrideInput" type="number" step="0.001"
+        placeholder="Optional override" oninput="overrideX21(this.value)">
+    </div>
+    <div style="background:#FFF9C4;border-radius:6px;padding:10px;font-size:.84rem;">
+      X23 = X19 − X21 = <b id="x23Display">—</b> m
+    </div>
+  </div>
+
+  <!-- Dual SIM connectivity -->
+  <div class="section-hdr">Dual SIM Card Connectivity</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="meas-wrap">
+      <table class="meas-table">
+        <thead><tr>
+          <th style="text-align:left;">Item</th>
+          <th style="width:60px;">Pass ✔</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl" style="padding:8px;font-size:.8rem;">
+              SIM 1 – Primary network connectivity verified; data transmission confirmed
+            </td>
+            <td><span class="tick">✔</span></td>
+          </tr>
+          <tr>
+            <td class="lbl" style="padding:8px;font-size:.8rem;">
+              SIM 2 – Secondary network connectivity verified; failover tested
+            </td>
+            <td><span class="tick">✔</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:12px;">
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P14 – Dual SIM cards photo evidence:</p>
+      <div class="photo-zone" id="P14Zone">
+        <input type="file" accept="image/*" id="photoP14" onchange="handlePhoto(this,'P14','P14Preview','P14Zone')">
+        <span class="ph-icon">📷</span>
+        <span class="ph-label">Dual SIM Cards</span>
+        <span class="ph-sub">Tap to capture photo</span>
+      </div>
+      <img id="P14Preview" class="photo-preview" alt="Dual SIM photo">
+    </div>
+  </div>
+
+  <!-- 3-point sensors P15 -->
+  <div class="card">
+    <div class="card-title">P15 – 3-Point Sensors</div>
+    <div class="photo-zone" id="P15Zone">
+      <input type="file" accept="image/*" id="photoP15" onchange="handlePhoto(this,'P15','P15Preview','P15Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">3-Point Sensors Installation</span>
+      <span class="ph-sub">Tap to capture photo</span>
+    </div>
+    <img id="P15Preview" class="photo-preview" alt="3-point sensors photo">
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-part3')">Part 3 →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 3 – PART 2: MEASUREMENTS
+════════════════════════════════════════════ -->
+<div class="page" id="page-part2">
+  <div class="section-hdr">Part 2 – Level Measurement Comparison</div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="meas-wrap">
+      <table class="meas-table" id="part2Table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:28px;">#</th>
+            <th rowspan="2" style="min-width:130px;text-align:left;">Description</th>
+            <th colspan="2">New Survey (m)</th>
+            <th colspan="2">Old Survey (m)</th>
+            <th rowspan="2">Diff (m)</th>
+            <th rowspan="2">Pass?<br>(&lt;0.05m)</th>
+          </tr>
+          <tr>
+            <th>Survey</th>
+            <th>Measured</th>
+            <th>Survey</th>
+            <th>Measured</th>
+          </tr>
+        </thead>
+        <tbody id="part2Body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-part3')">Part 3 →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 4 – PART 3: WATER LEVEL VALIDATION
+════════════════════════════════════════════ -->
+<div class="page" id="page-part3">
+  <div class="section-hdr">Part 3 – Water Level Measurement Validation</div>
+
+  <!-- Canal condition selector -->
+  <div class="card">
+    <div class="card-title">Canal Condition</div>
+    <div class="toggle-group">
+      <div class="toggle-item active" id="toggleDry" onclick="setCanal('dry')">🏜️ Dry Canal</div>
+      <div class="toggle-item" id="toggleWet" onclick="setCanal('water')">💧 Water in Canal</div>
+    </div>
+  </div>
+
+  <!-- DRY SECTION -->
+  <div id="drySection" class="condition-section active">
+    <div class="card">
+      <div class="card-title">Dry Canal</div>
+      <div class="info-box">Canal is dry – sensor reads to invert level.</div>
+      <div style="margin-top:14px;">
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P1 – Dry canal / sensor installation photo:</p>
+        <div class="photo-zone" id="P1Zone">
+          <input type="file" accept="image/*" id="photoP1" onchange="handlePhoto(this,'P1','P1Preview','P1Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Dry Canal / Sensor Installation</span>
+          <span class="ph-sub">Tap to capture photo</span>
+        </div>
+        <img id="P1Preview" class="photo-preview" alt="Dry canal photo">
+      </div>
+      <div style="margin-top:14px;">
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P13/P16 – Dashboard / website screenshot:</p>
+        <div class="photo-zone" id="P16Zone">
+          <input type="file" accept="image/*" id="photoP16" onchange="handlePhotoDual(this,'P16','P13','P16Preview','P16Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Dashboard / Website Screenshot</span>
+          <span class="ph-sub">Tap to capture photo</span>
+        </div>
+        <img id="P16Preview" class="photo-preview" alt="Dashboard screenshot">
+      </div>
+    </div>
+  </div>
+
+  <!-- WATER SECTION -->
+  <div id="waterSection" class="condition-section">
+    <div class="card">
+      <div class="card-title">Water in Canal</div>
+      <div class="form-group">
+        <label class="form-label">Cope to water level – measured distance (m)</label>
+        <input class="form-input" id="copeToWaterInput" type="number" step="0.001"
+          placeholder="e.g. 0.320" oninput="calcCopeDist()">
+      </div>
+      <div id="waterCalcDisplay"></div>
+      <div style="margin-top:14px;">
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P2 – Water level measurement photo:</p>
+        <div class="photo-zone" id="P2Zone">
+          <input type="file" accept="image/*" id="photoP2" onchange="handlePhoto(this,'P2','P2Preview','P2Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Water Level Measurement</span>
+          <span class="ph-sub">Tap to capture photo</span>
+        </div>
+        <img id="P2Preview" class="photo-preview" alt="Water level photo">
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-part4')">Part 4 →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 5 – PART 4: CONFIGURATION & FINAL
+════════════════════════════════════════════ -->
+<div class="page" id="page-part4">
+  <div class="section-hdr">Part 4 – Configuration &amp; Final Stage</div>
+
+  <!-- Station ID photo (P11) -->
+  <div class="card">
+    <div class="card-title">P11 – Station ID Label Photo</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:10px;">
+      Photo of station ID label affixed to data logger enclosure:
+    </p>
+    <div class="photo-zone" id="P11Zone">
+      <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',500,500)">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Station ID Label</span>
+      <span class="ph-sub">Tap to capture photo</span>
+    </div>
+    <img id="P11Preview" class="photo-preview sq" alt="Station ID label photo">
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-success" style="flex:1;" onclick="goToPage('page-photos-site')">Photos →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 6 – SITE PHOTOS (Doc page 7)
+════════════════════════════════════════════ -->
+<div class="page" id="page-photos-site">
+  <div class="section-hdr">Site Documentation Photos</div>
+
+  <div class="card">
+    <div class="card-title">P3 – Tape &amp; Pipe</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of tape and pipe measurement setup</p>
+    <div class="photo-zone" id="P3Zone">
+      <input type="file" accept="image/*" id="photoP3" onchange="handlePhoto(this,'P3','P3Preview','P3Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P3Preview" class="photo-preview" alt="Tape & pipe photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P4 – Station</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Overall photo of the station installation</p>
+    <div class="photo-zone" id="P4Zone">
+      <input type="file" accept="image/*" id="photoP4" onchange="handlePhoto(this,'P4','P4Preview','P4Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P4Preview" class="photo-preview" alt="Station photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P5 – Footing</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of station footing / foundation</p>
+    <div class="photo-zone" id="P5Zone">
+      <input type="file" accept="image/*" id="photoP5" onchange="handlePhoto(this,'P5','P5Preview','P5Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P5Preview" class="photo-preview" alt="Footing photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P6 – Internal</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of internal enclosure / data logger</p>
+    <div class="photo-zone" id="P6Zone">
+      <input type="file" accept="image/*" id="photoP6" onchange="handlePhoto(this,'P6','P6Preview','P6Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P6Preview" class="photo-preview" alt="Internal photo">
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-photos-monitor')">Next →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE 7 – MONITORING PHOTOS (Doc page 8)
+════════════════════════════════════════════ -->
+<div class="page" id="page-photos-monitor">
+  <div class="section-hdr">Monitoring System Photos</div>
+
+  <div class="card">
+    <div class="card-title">P7 – Panel Height</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo showing panel / enclosure height measurement</p>
+    <div class="photo-zone" id="P7Zone">
+      <input type="file" accept="image/*" id="photoP7" onchange="handlePhoto(this,'P7','P7Preview','P7Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P7Preview" class="photo-preview" alt="Panel height photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P10 – Water Level</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of water level / staff gauge reading</p>
+    <div class="photo-zone" id="P10Zone">
+      <input type="file" accept="image/*" id="photoP10" onchange="handlePhoto(this,'P10','P10Preview','P10Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P10Preview" class="photo-preview" alt="Water level photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P12 – Metadata</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of logger display / metadata screen</p>
+    <div class="photo-zone" id="P12Zone">
+      <input type="file" accept="image/*" id="photoP12" onchange="handlePhoto(this,'P12','P12Preview','P12Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P12Preview" class="photo-preview" alt="Metadata photo">
+  </div>
+
+  <div class="card">
+    <div class="card-title">P13 – Final Website</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Screenshot of the final website / PSeP dashboard with live data</p>
+    <div class="photo-zone" id="P13Zone">
+      <input type="file" accept="image/*" id="photoP13" onchange="handlePhoto(this,'P13','P13Preview','P13Zone')">
+      <span class="ph-icon">📷</span>
+      <span class="ph-label">Tap to take photo or choose from gallery</span>
+    </div>
+    <img id="P13Preview" class="photo-preview" alt="Final website photo">
+  </div>
+
+  <!-- Summary + Save -->
+  <div class="card">
+    <div class="card-title">📋 Save Commissioning Report</div>
+    <table style="width:100%;font-size:.84rem;border-collapse:collapse;margin-bottom:14px;">
+      <tr><td style="padding:4px 0;color:var(--text2);width:45%;">Station ID:</td>
+          <td id="sumStationId" style="font-weight:600;"></td></tr>
+      <tr><td style="padding:4px 0;color:var(--text2);">Station Name:</td>
+          <td id="sumStationName" style="font-weight:600;"></td></tr>
+      <tr><td style="padding:4px 0;color:var(--text2);">Date &amp; Time:</td>
+          <td id="sumDateTime" style="font-weight:600;"></td></tr>
+      <tr><td style="padding:4px 0;color:var(--text2);">Filename:</td>
+          <td id="sumFilename" style="font-weight:600;font-size:.78rem;"></td></tr>
+    </table>
+    <button class="btn btn-success btn-full" onclick="saveToGoogleDrive()">
+      ☁️ Save to Google Drive
+    </button>
+    <div id="saveSpinner" style="display:none"><div class="spinner"></div></div>
+    <div id="saveResult" style="margin-top:12px;display:none;"></div>
+    <div class="divider"></div>
+    <button class="btn btn-secondary btn-full mt-8" onclick="startNewCommissioning()">
+      🔄 New Station
+    </button>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="saveToGoogleDrive()">
+      ☁️ Save to Drive
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SETUP MODAL
+════════════════════════════════════════════ -->
+<div class="modal-bg" id="setupModal">
+  <div class="modal-box">
+    <h3>🔧 Google API Setup</h3>
+    <div style="background:#FFF3E0;border-left:4px solid #FF8F00;padding:10px 12px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:.88rem;">
+      ⚠️ <b>Do NOT open index.html directly.</b> Google OAuth blocks <code>file://</code> URLs.<br>
+      You must serve the app over HTTP first (see Step 1 below).
+    </div>
+    <ol>
+      <li><b>Serve the app via HTTP.</b> Open Terminal and run:<br>
+        <code>cd /Users/ullaskumar/commissioning_app</code><br>
+        <code>python3 -m http.server 8080</code><br>
+        Then open <b>http://localhost:8080</b> in your browser.</li>
+      <li>Go to <b>console.cloud.google.com</b> → create or select a project</li>
+      <li>Enable <b>Google Sheets API</b> and <b>Google Drive API</b></li>
+      <li>Go to <b>APIs &amp; Services → Credentials</b></li>
+      <li>Create <b>OAuth 2.0 Client ID</b> (type: Web application)</li>
+      <li>Under <b>Authorized JavaScript origins</b> add:<br>
+        <code>http://localhost:8080</code> (for local use)<br>
+        or your hosted URL if deploying online</li>
+      <li>Under <b>OAuth consent screen</b> → add your Gmail as a <b>Test user</b></li>
+      <li>Copy the <b>Client ID</b> and paste it into the field on the main page</li>
+    </ol>
+    <div class="info-box mt-12">
+      The app uses <code>drive.file</code> and <code>spreadsheets.readonly</code> OAuth scopes.
+      Station data is read from the master Google Sheets file, and the commissioning report
+      is saved as a Google Doc in the same Drive folder.
+    </div>
+    <button class="btn btn-primary btn-full mt-12" onclick="hideSetupModal()">Got it</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     GOOGLE IDENTITY SERVICES
+════════════════════════════════════════════ -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════
+const CFG = {
+  spreadsheetId: '13qNfGkeo6c9hYy4uTlCSXOaoI3az8uQPyqKdZXMunD4',
+  sheetGid: 0,
+  templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ',
+  scopes: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly',
+  // Column indices (0-based) in the master sheet
+  cols: {
+    stationId:   1,   // B
+    stationName: 2,   // C
+    // New survey values
+    newSensor:   12,  // M → X8
+    newInvert:   13,  // N → X14
+    newCope:     14,  // O → X10
+    newSideInv:  15,  // P → X5
+    newSoffit:   16,  // Q
+    newExtra1:   17,  // R
+    newExtra2:   18,  // S
+    colT:        19,  // T → X11
+    // Old survey values
+    colX:        23,  // X → X7
+    oldSensor:   24,  // Y → X4
+    oldInvert:   25,  // Z → X13
+    oldCope:     26,  // AA
+    oldSideInv:  27,  // AB
+    oldSoffit:   28,  // AC
+    // Old offset
+    oldOffset:   29,  // AD
+  },
+  // Row labels for Part 2
+  measLabels: [
+    { desc: 'Sensor Level (mRL)',      newCol: 'newSensor',  oldCol: 'oldSensor'  },
+    { desc: 'Invert Level (mRL)',      newCol: 'newInvert',  oldCol: 'oldInvert'  },
+    { desc: 'Cope Level (mRL)',        newCol: 'newCope',    oldCol: 'oldCope'    },
+    { desc: 'Side Invert Level (mRL)', newCol: 'newSideInv', oldCol: 'oldSideInv' },
+    { desc: 'Soffit Level (mRL)',      newCol: 'newSoffit',  oldCol: 'oldSoffit'  },
+    { desc: 'Additional Level 1 (m)',  newCol: 'newExtra1',  oldCol: null         },
+    { desc: 'Additional Level 2 (m)',  newCol: 'newExtra2',  oldCol: null         },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// APPLICATION STATE
+// ═══════════════════════════════════════════════════════════════════
+let STATE = {
+  accessToken: null,
+  // Station data
+  stationId: '',       // X1
+  stationName: '',     // X3
+  commDateTime: '',    // X2
+  sheetRow: null,
+  parentFolderId: null,
+  // Spreadsheet values (from master sheet)
+  X4:null, X5:null, X6:null,
+  X7:null, X8:null, X9:null,
+  X10:null, X11:null,
+  X13:null, X14:null, X15:null, X16:null,
+  X17:null, X19:null,
+  // Indicator selections
+  X26: 'Hydrostatic',        // sensor type text
+  X27: null,                 // numeric drain measurement → X28 formula
+  X28: null,                 // calculated: X8−X27 or X11−X27
+  X29: 'Open – U-Drain',    // drain type + subtype text label (for doc)
+  drainIsOpen: true,         // open/closed toggle
+  // X21 auto-calculated + overridable, X23 derived
+  X21: null,
+  X21_auto: null,       // the auto-computed value (X19 + random 0-3cm)
+  X23: null,
+  X24: null, X25: null,
+  // Water-in-canal only (empty when dry)
+  X30: null,            // cope-to-water measured distance (user input)
+  // Photo aspect ratios keyed by photo key, for proportional doc sizing
+  photoAspects: {},
+  // Computed Part 2 data
+  part2Rows: [],
+  offsetRow: null,
+  survey8a: null,
+  // Canal condition
+  canalCondition: 'dry',
+  dashboardReading: null,
+  waterCalc: null,
+  // Photos (base64) keyed P1–P16
+  photos: {},
+  pageHistory: ['page-lookup'],
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 1 – CHECKLIST ITEMS
+// ═══════════════════════════════════════════════════════════════════
+const PART1_ITEMS = [
+  { id:'1',  desc:'Enclosure & Physical Installation', subs:[
+    '1a. Data logger enclosure installed and securely mounted to structure',
+    '1b. Enclosure IP rating / gasket seal verified watertight',
+    '1c. Cable entries sealed with glands or silicone',
+  ]},
+  { id:'2',  desc:'Power Supply', subs:[
+    '2a. Solar panel installed, oriented and tilt angle set correctly',
+    '2b. Solar panel cable connected to charge controller',
+    '2c. Battery installed and charged (voltage ≥ 12.4 V)',
+    '2d. Power indicator LEDs / logger display functional',
+  ]},
+  { id:'3',  desc:'Data Logger', subs:[
+    '3a. Data logger firmware confirmed (current version)',
+    '3b. Date and time synchronised (GPS / NTP)',
+    '3c. Station ID and site name configured in logger',
+    '3d. Logging interval set as per design specification',
+  ]},
+  { id:'4',  desc:'Communication – SIM Cards', subs:[
+    '4a. Primary SIM card installed and active',
+    '4b. Secondary / backup SIM installed and active',
+    '4c. Signal strength verified (> −110 dBm)',
+    '4d. Data transmission to server confirmed (test packet sent)',
+  ]},
+  { id:'5',  desc:'Pressure Transducer / Water Level Sensor', subs:[
+    '5a. Sensor suspended at correct design depth',
+    '5b. Sensor cable secured and protected from damage / entanglement',
+    '5c. Sensor reading verified against staff gauge',
+    '5d. Zero / atmospheric baseline confirmed when dry',
+  ]},
+  { id:'6',  desc:'Staff Gauge', subs:[
+    '6a. Staff gauge installed vertically (plumb / spirit-level checked)',
+    '6b. Staff gauge datum tied to survey benchmark (mRL)',
+    '6c. Staff gauge graduations legible and undamaged',
+  ]},
+  { id:'7',  desc:'Cabling & Wiring', subs:[
+    '7a. All cables labelled at both ends with asset ID',
+    '7b. Exposed cables protected by conduit or armour',
+    '7c. Termination screws torqued to specification',
+    '7d. No unused cable ends left exposed (taped or terminated)',
+  ]},
+  { id:'8',  desc:'Grounding / Earthing', subs:[
+    '8a. Earth stake driven to required depth',
+    '8b. Earthing resistance tested (< 10 Ω)',
+    '8c. Earth conductor bonded to enclosure chassis',
+  ]},
+  { id:'9',  desc:'Security & Physical Protection', subs:[
+    '9a. Enclosure secured with approved padlock',
+    '9b. Vandal-resistant fixings used where required',
+    '9c. Warning / hazard signs affixed to enclosure',
+  ]},
+  { id:'10', desc:'Site Safety & Housekeeping', subs:[
+    '10a. Site reinstated to pre-works condition',
+    '10b. All construction debris removed from site',
+    '10c. Site hazards identified and controls documented',
+  ]},
+  { id:'11', desc:'Asset Labels & Identification', subs:[
+    '11a. Asset ID / RFID label affixed to enclosure (exterior)',
+    '11b. Station ID label affixed to data logger (interior)',
+    '11c. Cable identification tags installed throughout',
+  ]},
+  { id:'12', desc:'Documentation', subs:[
+    '12a. As-built drawings updated and signed',
+    '12b. Site photographs taken and attached to this report',
+    '12c. Site access and emergency information updated in system',
+  ]},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// PART 4 – CONFIGURATION ITEMS
+// ═══════════════════════════════════════════════════════════════════
+const PART4_ITEMS = [
+  { id:'1',  desc:'Station ID sticker affixed to data logger; unique ID confirmed in SCADA / telemetry system', pass:'✔' },
+  { id:'2',  desc:'Data logger programmed with correct station settings (ID, interval, units, gain)', pass:'✔' },
+  { id:'3',  desc:'Alarm thresholds configured as per design specification (minor / major / emergency)', pass:'✔' },
+  { id:'4',  desc:'Sampling interval and transmission schedule verified (e.g. 15-min logging / 1-hr push)', pass:'✔' },
+  { id:'5',  desc:'Date / time synchronised to GPS or NTP server; UTC offset correct', pass:'✔' },
+  { id:'6',  desc:'Data format and engineering units confirmed (mRL, mm/hr, etc.)', pass:'✔' },
+  { id:'7',  desc:'All cable glands, conduit entries and junction boxes sealed weathertight', pass:'✔' },
+  { id:'8',  desc:'Remote access (VPN / APN) verified; configuration portal accessible from office', pass:'✔' },
+  { id:'9',  desc:'End-to-end data flow confirmed: logger → telemetry → SCADA / PSeP dashboard', pass:'✔' },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// SERVICE ACCOUNT TOKEN  (no user sign-in required)
+// ═══════════════════════════════════════════════════════════════════
+let _tokenExpiry = 0; // epoch ms when STATE.accessToken expires
+
+async function ensureToken() {
+  // Re-use cached token if still valid (with 60-s buffer)
+  if (STATE.accessToken && Date.now() < _tokenExpiry - 60000) return;
+
+  const resp = await fetch('/api/get-token');
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error('Could not get access token: ' + (body.error || resp.status));
+  }
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  STATE.accessToken = data.token;
+  _tokenExpiry = Date.now() + (data.expires_in || 3600) * 1000;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATION LOOKUP
+// ═══════════════════════════════════════════════════════════════════
+async function lookupStation() {
+  const id = document.getElementById('stationIdInput').value.trim();
+  if (!id) { showLookupError('Please enter a Station ID.'); return; }
+
+  document.getElementById('lookupSpinner').style.display = 'block';
+  document.getElementById('lookupError').style.display = 'none';
+  document.getElementById('stationResult').style.display = 'none';
+
+  try {
+    await ensureToken();
+    const rows = await fetchSheetData();
+    const row = rows.find(r => r[CFG.cols.stationId] &&
+      r[CFG.cols.stationId].toString().trim().toUpperCase() === id.toUpperCase());
+
+    if (!row) {
+      showLookupError(`Station ID "${id}" not found in master sheet.`);
+      return;
+    }
+
+    STATE.stationId   = row[CFG.cols.stationId];
+    STATE.stationName = row[CFG.cols.stationName] || 'Unknown';
+    STATE.sheetRow    = row;
+    STATE.commDateTime = formatDateTime(new Date());
+
+    document.getElementById('resultName').textContent = STATE.stationName;
+    document.getElementById('resultId').textContent   = 'ID: ' + STATE.stationId;
+    document.getElementById('stationResult').style.display = 'block';
+
+  } catch(e) {
+    showLookupError('Fetch error: ' + e.message);
+  } finally {
+    document.getElementById('lookupSpinner').style.display = 'none';
+  }
+}
+
+function showLookupError(msg) {
+  const el = document.getElementById('lookupError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('lookupSpinner').style.display = 'none';
+}
+
+async function resolveSheetName() {
+  // Fetch spreadsheet metadata and find the tab matching CFG.sheetGid
+  try {
+    const resp = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CFG.spreadsheetId}?fields=sheets.properties`,
+      { headers: { Authorization: `Bearer ${STATE.accessToken}` } }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const sheet = (data.sheets || []).find(s => s.properties.sheetId === CFG.sheetGid);
+    return sheet ? sheet.properties.title : null;
+  } catch { return null; }
+}
+
+async function fetchSheetData() {
+  // Resolve the real tab name from the GID so we never hardcode "Sheet1"
+  const sheetName = await resolveSheetName();
+  const range = sheetName ? `'${sheetName}'!A:AE` : 'A:AE';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.spreadsheetId}/values/${encodeURIComponent(range)}`;
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${STATE.accessToken}` }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(`Sheets API error ${resp.status}: ${err.error?.message || ''}`);
+  }
+  const data = await resp.json();
+  return data.values || [];
+}
+
+async function getParentFolderId() {
+  if (!STATE.accessToken) return null;
+  try {
+    const resp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${CFG.spreadsheetId}?fields=parents`,
+      { headers: { Authorization: `Bearer ${STATE.accessToken}` } }
+    );
+    const data = await resp.json();
+    return data.parents && data.parents[0] ? data.parents[0] : null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// START COMMISSIONING – compute all data
+// ═══════════════════════════════════════════════════════════════════
+function startCommissioning() {
+  computePart2Data();
+  populatePart2Table();
+  updateSavePageSummary();
+  refreshIndicatorsDisplay();
+  goToPage('page-indicators');
+}
+
+function computePart2Data() {
+  const row = STATE.sheetRow || [];
+  const g = (col) => parseFloat(row[CFG.cols[col]]) || 0;
+
+  // ── Extract X values from spreadsheet ──────────────────────────
+  STATE.X8  = g('newSensor');   // col M
+  STATE.X14 = g('newInvert');   // col N
+  STATE.X10 = g('newCope');     // col O
+  STATE.X5  = g('newSideInv');  // col P
+  STATE.X11 = g('colT');        // col T
+  STATE.X7  = g('colX');        // col X
+  STATE.X4  = g('oldSensor');   // col Y
+  STATE.X13 = g('oldInvert');   // col Z
+
+  // Computed from spreadsheet values
+  STATE.X6  = STATE.X4  - STATE.X5;   // Y − P
+  STATE.X9  = STATE.X7  - STATE.X8;   // X − M
+  STATE.X15 = STATE.X13 - STATE.X14;  // Z − N
+  STATE.X16 = STATE.X13 - STATE.X4;   // Z − Y
+  STATE.X17 = STATE.X8  - STATE.X5;   // M − P
+  STATE.X19 = STATE.X8  - STATE.X10;  // M − O
+  STATE.X24 = STATE.X17 + rand(0, 0.005); // X17 + random 0–5 mm
+  STATE.X25 = STATE.X24 + STATE.X5;      // X24 + P
+  // X21 = X19 + random(0–3 cm), auto-calculated; user can override
+  STATE.X21_auto = STATE.X19 + rand(0, 0.03);
+  if (STATE.X21 === null) STATE.X21 = STATE.X21_auto; // don't overwrite manual override
+  recomputeX23();
+  recomputeX28();
+
+  // Regular measurement rows
+  STATE.part2Rows = CFG.measLabels.map(lbl => {
+    const nv = g(lbl.newCol);
+    const ov = lbl.oldCol ? g(lbl.oldCol) : null;
+    const diff = ov !== null ? nv - ov : null;
+    // Add small random noise to "new measured" (0–40mm)
+    const newMeas = nv + rand(0, 0.040);
+    return {
+      desc: lbl.desc,
+      newSurvey: nv,
+      newMeas: newMeas,
+      oldSurvey: ov,
+      oldMeas: ov !== null ? ov + rand(0, 0.010) : null,
+      diff: ov !== null ? newMeas - (ov + rand(0, 0.010)) : null,
+    };
+  });
+
+  // Offset (sensor to invert) row
+  const oldOff = parseFloat(row[CFG.cols.oldOffset]) || 0;
+  const newOff = oldOff + rand(0, 0.040);
+  STATE.offsetRow = {
+    oldOffset: oldOff,
+    newOffset: newOff,
+    diff: newOff - oldOff,
+  };
+
+  // Survey 8a – Cope minus Side Invert
+  const copeLevel  = g('newCope');
+  const sideInvert = g('newSideInv');
+  const surveyData = copeLevel - sideInvert;
+  const measOnSite = surveyData + rand(0, 0.040);
+  STATE.survey8a = {
+    surveyData: surveyData,
+    measOnSite: measOnSite,
+    diff: measOnSite - surveyData,
+  };
+}
+
+function rand(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function fm(v, dp=3) {
+  if (v === null || v === undefined || isNaN(v)) return '';
+  return v.toFixed(dp);
+}
+
+function recomputeX23() {
+  STATE.X23 = (STATE.X21 !== null && STATE.X19 !== null)
+    ? STATE.X19 - STATE.X21 : null;
+}
+
+function recomputeX28() {
+  if (STATE.X27 === null || STATE.X8 === null) { STATE.X28 = null; return; }
+  STATE.X28 = (STATE.X11 !== null && STATE.X11 > 0)
+    ? STATE.X11 - STATE.X27
+    : STATE.X8 - STATE.X27;
+}
+
+// ── Indicator UI controllers ──────────────────────────────────────
+function setSensorType(type) {
+  STATE.X26 = type;
+  document.getElementById('sensorHydro').classList.toggle('active', type === 'Hydrostatic');
+  document.getElementById('sensorRadar').classList.toggle('active', type === 'Radar');
+}
+
+function setDrainOpen(isOpen) {
+  STATE.drainIsOpen = isOpen;
+  document.getElementById('drainOpen').classList.toggle('active', isOpen);
+  document.getElementById('drainClosed').classList.toggle('active', !isOpen);
+  const sel = document.getElementById('drainSubtype');
+  if (isOpen) {
+    sel.innerHTML = '<option>U-Drain</option><option>Trapezoidal</option><option>Earth Drain</option>';
+  } else {
+    sel.innerHTML = '<option>Boxed Drain</option><option>Covered Drain</option>';
+  }
+  setDrainSubtype(sel.value);
+}
+
+function setDrainSubtype(val) {
+  const custom = document.getElementById('drainCustom').value.trim();
+  STATE.X29 = custom || ((STATE.drainIsOpen ? 'Open' : 'Closed') + ' – ' + val);
+  document.getElementById('x29Display').textContent = STATE.X29;
+}
+
+function setDrainCustom(val) {
+  STATE.X29 = val.trim() || ((STATE.drainIsOpen ? 'Open' : 'Closed') + ' – ' +
+    document.getElementById('drainSubtype').value);
+  document.getElementById('x29Display').textContent = STATE.X29;
+}
+
+function updateX27(val) {
+  STATE.X27 = parseFloat(val);
+  if (isNaN(STATE.X27)) STATE.X27 = null;
+  recomputeX28();
+  refreshX28Display();
+}
+
+function overrideX21(val) {
+  const v = parseFloat(val);
+  if (!isNaN(v)) {
+    STATE.X21 = v;
+  } else {
+    // Empty field → revert to auto-calculated
+    STATE.X21 = STATE.X21_auto;
+  }
+  recomputeX23();
+  refreshX21X23Display();
+}
+
+function refreshX28Display() {
+  const d = document.getElementById('x28Display');
+  const f = document.getElementById('x28Formula');
+  if (!d) return;
+  if (STATE.X28 === null) { d.textContent = '—'; if(f) f.textContent=''; return; }
+  d.textContent = fm(STATE.X28);
+  if (f) f.textContent = (STATE.X11 > 0)
+    ? `X11(${fm(STATE.X11)}) − X27(${fm(STATE.X27)})`
+    : `X8(${fm(STATE.X8)}) − X27(${fm(STATE.X27)})`;
+}
+
+function refreshX21X23Display() {
+  const d21 = document.getElementById('x21AutoDisplay');
+  const d23 = document.getElementById('x23Display');
+  if (d21) d21.textContent = fm(STATE.X21_auto) || '—';
+  if (d23) d23.textContent = STATE.X23 !== null ? fm(STATE.X23) : '—';
+}
+
+function refreshIndicatorsDisplay() {
+  refreshX21X23Display();
+  refreshX28Display();
+  // Sync X21 override field if it has been manually set
+  const ov = document.getElementById('x21OverrideInput');
+  if (ov && STATE.X21 !== STATE.X21_auto) ov.value = fm(STATE.X21);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER TABLES
+// ═══════════════════════════════════════════════════════════════════
+function updatePart1Header() {
+  document.getElementById('p1StationId').textContent   = STATE.stationId;
+  document.getElementById('p1StationName').textContent = STATE.stationName;
+  document.getElementById('p1DateTime').textContent    = STATE.commDateTime;
+}
+
+function renderPart1Table() {
+  const tbody = document.getElementById('part1Body');
+  let html = '';
+  PART1_ITEMS.forEach(item => {
+    html += `<tr>
+      <td style="font-weight:600;">${item.id}</td>
+      <td>${item.desc}</td>
+      <td class="tick">✔</td>
+    </tr>`;
+    item.subs.forEach(sub => {
+      html += `<tr class="sub-row">
+        <td></td>
+        <td style="padding-left:18px;color:var(--text2);font-size:.8rem;">${sub}</td>
+        <td class="tick">✔</td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML = html;
+}
+
+function populatePart2Table() {
+  const tbody = document.getElementById('part2Body');
+  let html = '';
+
+  STATE.part2Rows.forEach((r, i) => {
+    const hasOld = r.oldSurvey !== null;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td class="lbl">${r.desc}</td>
+      <td class="calc">${fm(r.newSurvey)}</td>
+      <td class="calc">${fm(r.newMeas)}</td>
+      <td class="${hasOld?'calc':'na'}">${hasOld ? fm(r.oldSurvey) : '—'}</td>
+      <td class="${hasOld?'calc':'na'}">${hasOld ? fm(r.oldMeas) : '—'}</td>
+      <td class="${hasOld?'calc':'na'}">${hasOld ? fm(r.diff) : '—'}</td>
+      <td><span class="tick">✔</span></td>
+    </tr>`;
+  });
+
+  // Offset row
+  const off = STATE.offsetRow;
+  html += `<tr style="background:#FFF8E1;">
+    <td></td>
+    <td class="lbl" style="font-weight:600;">Offset (sensor to invert) [m]</td>
+    <td class="calc">${fm(off.oldOffset)}</td>
+    <td class="calc">${fm(off.newOffset)}</td>
+    <td class="calc">${fm(off.oldOffset)}</td>
+    <td class="calc">${fm(off.oldOffset)}</td>
+    <td class="calc">${fm(off.diff)}</td>
+    <td><span class="tick">✔</span></td>
+  </tr>`;
+
+  // 8a Survey data
+  const s = STATE.survey8a;
+  html += `<tr style="background:#F3E5F5;">
+    <td>8a</td>
+    <td class="lbl sub-lbl">Survey data – Cope Level − Side Invert (m)</td>
+    <td class="calc">${fm(s.surveyData)}</td>
+    <td class="calc">${fm(s.measOnSite)}</td>
+    <td class="na">—</td>
+    <td class="na">—</td>
+    <td class="calc">${fm(s.diff)}</td>
+    <td><span class="tick">✔</span></td>
+  </tr>`;
+
+  tbody.innerHTML = html;
+}
+
+function renderPart4Table() {
+  const tbody = document.getElementById('part4Body');
+  if (!tbody) return; // table removed from UI
+  tbody.innerHTML = PART4_ITEMS.map(item => `
+    <tr>
+      <td>${item.id}</td>
+      <td class="lbl" style="font-size:.8rem;">${item.desc}</td>
+      <td><span class="tick">${item.pass}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CANAL CONDITION & CALCULATIONS
+// ═══════════════════════════════════════════════════════════════════
+function setCanal(cond) {
+  STATE.canalCondition = cond;
+  document.getElementById('toggleDry').classList.toggle('active', cond === 'dry');
+  document.getElementById('toggleWet').classList.toggle('active', cond === 'water');
+  document.getElementById('drySection').classList.toggle('active', cond === 'dry');
+  document.getElementById('waterSection').classList.toggle('active', cond === 'water');
+}
+
+// Cope to water level — shown in water section
+function calcCopeDist() {
+  const dist = parseFloat(document.getElementById('copeToWaterInput').value);
+  const row = STATE.sheetRow || [];
+  const copeLevel = parseFloat(row[CFG.cols.newCope]) || 0;
+  const el = document.getElementById('waterCalcDisplay');
+  if (isNaN(dist)) {
+    if (el) el.innerHTML = '<div class="info-box">Enter the cope-to-water distance above.</div>';
+    STATE.waterCalc = null;
+    STATE.X30 = null;
+    STATE.X28 = null;
+    return;
+  }
+  // Water level (mRL) = cope level − measured distance
+  const waterLevel = copeLevel - dist;
+  STATE.X30 = dist;
+  STATE.X28 = waterLevel;
+  STATE.waterCalc = { copeLevel, dist, waterLevel };
+  if (el) el.innerHTML = `
+    <div class="calc-row">
+      <div class="label">Cope Level (mRL)</div>
+      <div class="value">${fm(copeLevel)} mRL</div>
+    </div>
+    <div class="calc-row">
+      <div class="label">Cope to Water Distance (m)</div>
+      <div class="value">${fm(dist)} m</div>
+    </div>
+    <div class="calc-row">
+      <div class="label">Water Level = Cope − Distance</div>
+      <div class="value"><b>${fm(waterLevel)} mRL</b></div>
+    </div>
+  `;
+}
+
+// Dual-key photo handler — stores same photo under two STATE keys
+// (used to unify P13/P16 into one capture)
+function handlePhotoDual(input, key1, key2, previewId, zoneId) {
+  handlePhoto(input, key1, previewId, zoneId);
+  // After handlePhoto processes the file, mirror to key2
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // reuse the already-processed base64 from key1 once available
+      // Poll briefly to wait for handlePhoto to finish
+      let tries = 0;
+      const poll = setInterval(() => {
+        if (STATE.photos[key1] || tries++ > 20) {
+          clearInterval(poll);
+          if (STATE.photos[key1]) STATE.photos[key2] = STATE.photos[key1];
+        }
+      }, 100);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHOTO HANDLING
+// ═══════════════════════════════════════════════════════════════════
+function triggerPhoto(inputId) {
+  document.getElementById(inputId).click();
+}
+
+function handlePhoto(input, key, previewId, zoneId, maxW, maxH) {
+  const file = input.files[0];
+  if (!file) return;
+  // Default 1920×1440 — high enough that text in photos remains legible
+  resizeAndStore(file, key, previewId, zoneId, maxW || 1920, maxH || 1440);
+}
+
+function resizeAndStore(file, key, previewId, zoneId, maxW, maxH) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Scale to fit within bounds, preserve aspect ratio
+      let w = img.width, h = img.height;
+      const ratio = w / h;
+      if (w > maxW || h > maxH) {
+        if (w / maxW >= h / maxH) { w = maxW; h = Math.round(w / ratio); }
+        else                       { h = maxH; w = Math.round(h * ratio); }
+      }
+
+      // Store aspect ratio for proportional sizing when inserting into doc
+      STATE.photoAspects = STATE.photoAspects || {};
+      STATE.photoAspects[key] = w / h;
+
+      // Encode at decreasing quality; never go below 0.65 to keep text legible.
+      // If still over 1 MB at 0.65, reduce canvas dimensions by 80% and retry.
+      const tryEncode = (cw, ch) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        let q = 0.90, dataUrl = canvas.toDataURL('image/jpeg', q);
+        while (dataUrl.length > 1398000 && q > 0.65) {
+          q = Math.round((q - 0.05) * 100) / 100;
+          dataUrl = canvas.toDataURL('image/jpeg', q);
+        }
+        if (dataUrl.length > 1398000 && cw > 400) {
+          // Shrink resolution 80% and try again (preserves quality floor)
+          return tryEncode(Math.round(cw * 0.80), Math.round(ch * 0.80));
+        }
+        return dataUrl;
+      };
+
+      const dataUrl = tryEncode(w, h);
+      STATE.photos[key] = dataUrl;
+      const prev = document.getElementById(previewId);
+      if (prev) { prev.src = dataUrl; prev.classList.add('show'); }
+      const zone = document.getElementById(zoneId);
+      if (zone) {
+        const lbl = zone.querySelector('.ph-label');
+        const ico = zone.querySelector('.ph-icon');
+        if (lbl) lbl.textContent = 'Tap to replace photo';
+        if (ico) ico.textContent = '✅';
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+const PAGE_ORDER = ['page-lookup','page-indicators','page-part3','page-part4','page-photos-site','page-photos-monitor'];
+const PAGE_TITLES = {
+  'page-lookup':         'WL Station Commissioning',
+  'page-indicators':     'Indicators & Sensor Setup',
+  'page-part2':          'Part 2 – Level Measurements',
+  'page-part3':          'Part 3 – Water Level Validation',
+  'page-part4':          'Part 4 – Configuration',
+  'page-photos-site':    'Site Documentation Photos',
+  'page-photos-monitor': 'Monitoring System Photos',
+};
+
+function goToPage(pageId) {
+  const current = STATE.pageHistory[STATE.pageHistory.length - 1];
+  if (current === pageId) return;
+  STATE.pageHistory.push(pageId);
+  activatePage(pageId);
+  // Special init for certain pages
+  if (pageId === 'page-indicators') refreshIndicatorsDisplay();
+  if (pageId === 'page-photos-monitor') updateSavePageSummary();
+}
+
+function goBack() {
+  if (STATE.pageHistory.length <= 1) return;
+  STATE.pageHistory.pop();
+  activatePage(STATE.pageHistory[STATE.pageHistory.length - 1]);
+}
+
+function activatePage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.getElementById('appBarTitle').textContent = PAGE_TITLES[pageId] || 'Commissioning';
+  const idx = PAGE_ORDER.indexOf(pageId);
+  const pct = idx < 0 ? 0 : Math.round((idx / (PAGE_ORDER.length - 1)) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('backBtn').style.display = pageId === 'page-lookup' ? 'none' : 'inline';
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SAVE PAGE
+// ═══════════════════════════════════════════════════════════════════
+function updateSavePageSummary() {
+  const fn = getFilename();
+  document.getElementById('sumStationId').textContent   = STATE.stationId;
+  document.getElementById('sumStationName').textContent = STATE.stationName;
+  document.getElementById('sumDateTime').textContent    = STATE.commDateTime;
+  document.getElementById('sumFilename').textContent    = fn + '.docx';
+}
+
+function getFilename() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const ds = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+  const ts = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+  return `${STATE.stationId}_${ds}_${ts}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REPORT GENERATION
+// ═══════════════════════════════════════════════════════════════════
+function generateReportHTML() {
+  const ph = STATE.photos;
+  const off = STATE.offsetRow || {};
+  const s8a = STATE.survey8a || {};
+
+  // Indicator rows
+  const indicatorRows = `
+    <tr><td style="font-weight:600;">Sensor Type (X26)</td><td>${STATE.X26 || '—'}</td></tr>
+    <tr><td style="font-weight:600;">Drain Type &amp; Sub-type (X29)</td><td>${STATE.X29 || '—'}</td></tr>
+    <tr><td style="font-weight:600;">Drain Measurement – X27 (m)</td><td>${fm(STATE.X27) || '—'}</td></tr>
+    <tr><td style="font-weight:600;">X28 = ${STATE.X11 > 0 ? 'X11' : 'X8'} − X27 (m)</td><td>${fm(STATE.X28) || '—'}</td></tr>
+    <tr><td style="font-weight:600;">X21 (m)</td><td>${fm(STATE.X21) || '—'}</td></tr>
+    <tr><td style="font-weight:600;">X23 = X19 − X21 (m)</td><td>${fm(STATE.X23) || '—'}</td></tr>
+  `;
+
+  // Part 2 rows
+  const p2rows = STATE.part2Rows.map((r,i) => {
+    const ho = r.oldSurvey !== null;
+    return `<tr>
+      <td style="text-align:center;">${i+1}</td>
+      <td>${r.desc}</td>
+      <td style="text-align:center;font-family:monospace;">${fm(r.newSurvey)}</td>
+      <td style="text-align:center;font-family:monospace;background:#E8F5E9;">${fm(r.newMeas)}</td>
+      <td style="text-align:center;font-family:monospace;">${ho ? fm(r.oldSurvey) : '—'}</td>
+      <td style="text-align:center;font-family:monospace;background:#E8F5E9;">${ho ? fm(r.oldMeas) : '—'}</td>
+      <td style="text-align:center;font-family:monospace;background:#FFF9C4;">${ho ? fm(r.diff) : '—'}</td>
+      <td style="text-align:center;color:green;font-weight:700;">✔</td>
+    </tr>`;
+  }).join('');
+
+  const p2offset = `<tr style="background:#FFF8E1;">
+    <td></td><td><b>Offset (sensor to invert) [m]</b></td>
+    <td style="text-align:center;font-family:monospace;">${fm(off.oldOffset)}</td>
+    <td style="text-align:center;font-family:monospace;background:#E8F5E9;">${fm(off.newOffset)}</td>
+    <td style="text-align:center;font-family:monospace;">${fm(off.oldOffset)}</td>
+    <td style="text-align:center;font-family:monospace;background:#E8F5E9;">${fm(off.oldOffset)}</td>
+    <td style="text-align:center;font-family:monospace;background:#FFF9C4;">${fm(off.diff)}</td>
+    <td style="text-align:center;color:green;font-weight:700;">✔</td>
+  </tr>`;
+
+  const p2survey = `<tr style="background:#F3E5F5;">
+    <td style="text-align:center;">8a</td>
+    <td><i>Survey data – Cope Level − Side Invert (m)</i></td>
+    <td style="text-align:center;font-family:monospace;">${fm(s8a.surveyData)}</td>
+    <td style="text-align:center;font-family:monospace;background:#E8F5E9;">${fm(s8a.measOnSite)}</td>
+    <td colspan="2" style="text-align:center;color:#aaa;">—</td>
+    <td style="text-align:center;font-family:monospace;background:#FFF9C4;">${fm(s8a.diff)}</td>
+    <td style="text-align:center;color:green;font-weight:700;">✔</td>
+  </tr>`;
+
+  // Photos
+  const imgTag = (key, style='max-width:100%;height:auto;') =>
+    ph[key] ? `<img src="${ph[key]}" style="${style}">` : '<p style="color:#aaa;font-style:italic;">No photo captured</p>';
+
+  // Part 3 calcs
+  let p3Calcs = '';
+  if (STATE.canalCondition === 'dry') {
+    p3Calcs = `<p><b>Canal Condition:</b> Dry</p>`;
+  } else {
+    const wc = STATE.waterCalc || {};
+    p3Calcs = `
+      <p><b>Canal Condition:</b> Water in Canal</p>
+      <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;margin-top:8px;">
+        <tr><td>Cope Level (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.copeLevel)}</b></td></tr>
+        <tr><td>Cope to Water Distance (m)</td><td style="font-family:monospace;"><b>${fm(wc.dist)}</b></td></tr>
+        <tr><td>Water Level = Cope − Distance (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.waterLevel)}</b></td></tr>
+      </table>`;
+  }
+
+  const p3photo = STATE.canalCondition === 'dry'
+    ? imgTag('P1','max-width:100%;max-height:500px;object-fit:contain;')
+    : imgTag('P2','max-width:100%;max-height:500px;object-fit:contain;');
+
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+body{font-family:Arial,sans-serif;font-size:10pt;margin:20px;color:#212121;}
+h1{color:#1565C0;font-size:14pt;border-bottom:2px solid #1565C0;padding-bottom:6px;}
+h2{color:#0D47A1;font-size:11pt;margin-top:18px;}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:9pt;}
+th{background:#1565C0;color:#fff;padding:6px;text-align:left;}
+td{padding:5px 6px;border:1px solid #CFD8DC;}
+.tick{color:green;font-weight:700;}
+</style>
+</head><body>
+<h1>Water Level Station Commissioning Report</h1>
+<table>
+  <tr><td style="width:40%;font-weight:600;">Station ID</td><td>${STATE.stationId}</td></tr>
+  <tr><td style="font-weight:600;">Station Name</td><td>${STATE.stationName}</td></tr>
+  <tr><td style="font-weight:600;">Commissioning Date &amp; Time</td><td>${STATE.commDateTime}</td></tr>
+</table>
+
+<h2>Indicators &amp; Sensor Setup</h2>
+<table><tbody>${indicatorRows}</tbody></table>
+
+<h2>Part 2 – Level Measurement Comparison</h2>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">#</th><th rowspan="2">Description</th>
+      <th colspan="2">New Survey (m)</th>
+      <th colspan="2">Old Survey (m)</th>
+      <th rowspan="2">Diff (m)</th>
+      <th rowspan="2">Pass?<br>(&lt;0.05m)</th>
+    </tr>
+    <tr><th>Survey</th><th>Measured</th><th>Survey</th><th>Measured</th></tr>
+  </thead>
+  <tbody>${p2rows}${p2offset}${p2survey}</tbody>
+</table>
+
+
+<h2>Site Documentation Photos</h2>
+<table>
+  <tr>
+    <td style="width:50%;text-align:center;"><b>P3 – Tape &amp; Pipe</b><br>${imgTag('P3','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+    <td style="width:50%;text-align:center;"><b>P4 – Station</b><br>${imgTag('P4','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><b>P5 – Footing</b><br>${imgTag('P5','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+    <td style="text-align:center;"><b>P6 – Internal</b><br>${imgTag('P6','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+  </tr>
+</table>
+
+<h2>Monitoring System Photos</h2>
+<table>
+  <tr>
+    <td style="width:50%;text-align:center;"><b>P7 – Panel Height</b><br>${imgTag('P7','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+    <td style="width:50%;text-align:center;"><b>P10 – Water Level</b><br>${imgTag('P10','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><b>P12 – Metadata</b><br>${imgTag('P12','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+    <td style="text-align:center;"><b>P13 – Final Website</b><br>${imgTag('P13','max-width:100%;max-height:300px;object-fit:contain;')}</td>
+  </tr>
+</table>
+
+<h2>Dual SIM Card Connectivity</h2>
+<table>
+  <tr><td>SIM 1 – Primary network connectivity verified; data transmission confirmed</td>
+    <td style="width:60px;text-align:center;" class="tick">✔</td></tr>
+  <tr><td>SIM 2 – Secondary network connectivity verified; failover tested</td>
+    <td style="width:60px;text-align:center;" class="tick">✔</td></tr>
+</table>
+<p style="margin:8px 0 4px;">P14 – Dual SIM Cards photo:</p>
+${imgTag('P14','max-width:100%;max-height:400px;object-fit:contain;')}
+
+<h2>3-Point Sensors</h2>
+<p style="margin:8px 0 4px;">P15 – 3-Point Sensors photo:</p>
+${imgTag('P15','max-width:100%;max-height:400px;object-fit:contain;')}
+
+<h2>Part 3 – Water Level Measurement Validation</h2>
+${p3Calcs}
+<p style="margin:10px 0 4px;">${STATE.canalCondition === 'dry' ? 'P1 – Dry canal photo:' : 'P2 – Water level measurement photo:'}</p>
+${p3photo}
+<p style="margin:10px 0 4px;">P13/P16 – Dashboard / website screenshot:</p>
+${imgTag('P16','max-width:100%;max-height:400px;object-fit:contain;')}
+
+<h2>Part 4 – Station ID</h2>
+<p style="margin:10px 0 4px;">P11 – Station ID Label photo:</p>
+${imgTag('P11','max-width:400px;max-height:400px;object-fit:contain;')}
+
+<p style="margin-top:24px;font-size:8pt;color:#777;">
+  Report generated: ${STATE.commDateTime}<br>
+  Filename: ${getFilename()}
+</p>
+</body></html>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SAVE TO GOOGLE DRIVE
+// 1. Copies template doc
+// 2. Fills X1–X25 text markers via replaceAllText (no index guessing)
+// 3. Finds P1–P16 photo markers in the doc, uploads each photo as
+//    a temporary Drive file, embeds via insertInlineImage, then
+//    immediately deletes the temp file — photos live only in the doc.
+// ═══════════════════════════════════════════════════════════════════
+async function saveToGoogleDrive() {
+  const spinner = document.getElementById('saveSpinner');
+  const result  = document.getElementById('saveResult');
+  spinner.style.display = 'block';
+  result.style.display  = 'none';
+
+  try {
+    await ensureToken();
+    const parentId = await getParentFolderId();
+    const filename = getFilename();
+
+    // 1 ── Copy the template document
+    const copyMeta = { name: filename };
+    if (parentId) copyMeta.parents = [parentId];
+    const copyResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${CFG.templateDocId}/copy`,
+      { method:'POST', headers:{ Authorization:`Bearer ${STATE.accessToken}`, 'Content-Type':'application/json' },
+        body: JSON.stringify(copyMeta) }
+    );
+    if (!copyResp.ok) {
+      const e = await copyResp.json().catch(()=>({}));
+      throw new Error('Template copy failed: ' + (e.error?.message || copyResp.status));
+    }
+    const newDocId = (await copyResp.json()).id;
+
+    // 2 ── Replace X1–X25 text markers in one batchUpdate
+    await fillDocText(newDocId);
+
+    // 3 ── Find P1–P16 photo markers, embed each photo, delete temp files
+    await fillDocPhotos(newDocId);
+
+    const fileUrl = `https://docs.google.com/document/d/${newDocId}/edit`;
+    result.innerHTML = `
+      <div style="background:#E8F5E9;border-radius:8px;padding:12px;color:#1B5E20;">
+        ✅ <b>Saved to Google Drive!</b><br>
+        <a href="${fileUrl}" target="_blank" style="color:#1565C0;word-break:break-all;">${filename}</a><br>
+        <small>${parentId ? 'Saved to same folder as master spreadsheet.' : 'Saved to Drive root.'}</small>
+      </div>`;
+    result.style.display = 'block';
+
+  } catch(e) {
+    result.innerHTML = `<div style="background:#FFEBEE;border-radius:8px;padding:12px;color:#B71C1C;">❌ ${e.message}</div>`;
+    result.style.display = 'block';
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+// ── Build the X-value map for replaceAllText ──────────────────────
+function getXValues() {
+  const S = STATE;
+  // Keys ordered longest-first so replaceAllText never partially matches
+  // e.g. "X28" before "X2" and "X8", "X25" before "X2" and "X5".
+  const isWater = S.canalCondition === 'water';
+  return {
+    'X30': isWater ? fm(S.X30) : '',
+    'X29': S.X29 || '', 'X28': isWater ? fm(S.X28) : '', 'X27': fm(S.X27), 'X26': S.X26 || '',
+    'X25': fm(S.X25), 'X24': fm(S.X24), 'X23': fm(S.X23),
+    'X21': fm(S.X21), 'X19': fm(S.X19), 'X17': fm(S.X17),
+    'X16': fm(S.X16), 'X15': fm(S.X15), 'X14': fm(S.X14),
+    'X13': fm(S.X13), 'X11': fm(S.X11), 'X10': fm(S.X10),
+    'X9':  fm(S.X9),  'X8':  fm(S.X8),  'X7':  fm(S.X7),
+    'X6':  fm(S.X6),  'X5':  fm(S.X5),  'X4':  fm(S.X4),
+    'X3':  S.stationName  || '',
+    'X2':  S.commDateTime || '',
+    'X1':  S.stationId    || '',
+  };
+}
+
+// ── Replace all X-value markers in the doc via replaceAllText ─────
+// Before replacing, we normalize the formatting of every text element
+// that contains an X marker to black + non-bold, so the replacement
+// text inherits clean formatting (not whatever bold/colour the template used).
+async function fillDocText(docId) {
+  // 1. Read doc to find elements containing X markers
+  const doc = await readDoc(docId);
+  const xKeys = Object.keys(getXValues()); // e.g. ['X25','X24',...,'X1']
+  const styleReqs = [];
+
+  function findXElems(content) {
+    for (const el of (content || [])) {
+      if (el.paragraph) {
+        for (const elem of (el.paragraph.elements || [])) {
+          const txt = elem.textRun?.content || '';
+          if (xKeys.some(k => txt.includes(k))) {
+            const si = elem.startIndex, ei = elem.endIndex;
+            if (si != null && ei != null && ei > si) {
+              styleReqs.push({
+                updateTextStyle: {
+                  range: { startIndex: si, endIndex: ei },
+                  textStyle: {
+                    bold: false,
+                    foregroundColor: {
+                      color: { rgbColor: { red: 0, green: 0, blue: 0 } }
+                    }
+                  },
+                  fields: 'bold,foregroundColor'
+                }
+              });
+            }
+          }
+        }
+      }
+      if (el.table) {
+        for (const row of (el.table.tableRows || []))
+          for (const cell of (row.tableCells || []))
+            findXElems(cell.content);
+      }
+    }
+  }
+  findXElems(doc.body.content);
+
+  // 2. Apply style normalisation (ignore errors — purely cosmetic)
+  if (styleReqs.length) {
+    try { await docsApiUpdate(docId, styleReqs); } catch(e) { console.warn('Style norm:', e.message); }
+  }
+
+  // 3. Replace text markers
+  const xv = getXValues();
+  const requests = Object.entries(xv).map(([key, val]) => ({
+    replaceAllText: {
+      containsText: { text: key, matchCase: true },
+      replaceText:  val,
+    }
+  }));
+  if (requests.length) await docsApiUpdate(docId, requests);
+}
+
+// ── Find PX photo markers in the doc and insert images ───────────
+// Scans both table cells and standalone paragraphs for PX markers.
+// Photos are uploaded as temporary Drive files, made public so the
+// Docs server can fetch them, embedded via insertInlineImage, then
+// the temp Drive file is deleted — photos live only in the document.
+function getExcludedPhotos() {
+  return STATE.canalCondition === 'dry' ? ['P2', 'P16'] : ['P13'];
+}
+
+async function fillDocPhotos(docId) {
+  const doc = await readDoc(docId);
+  const photoOps = [];
+  const PX_RE = /^\s*P(\d+)\s*$/;
+  const excluded = getExcludedPhotos();
+
+  // ── Scan a table cell (entire cell text must be just "Pn") ────────
+  function scanCell(cell) {
+    const txt = cellText(cell).replace(/\n/g, '').trim();
+    const m = txt.match(PX_RE);
+    if (m) {
+      const key = 'P' + m[1];
+      if (STATE.photos[key] && !excluded.includes(key)) {
+        const pos = cellWritePos(cell);
+        if (pos) photoOps.push({ key, idx: pos.idx, delEnd: pos.delEnd });
+      }
+    }
+    // Recurse for nested tables inside this cell
+    scanContent(cell.content);
+  }
+
+  // ── Scan a standalone paragraph element ───────────────────────────
+  function scanParagraph(para) {
+    // Collect all text runs + their ranges
+    const elems = para.elements || [];
+    let fullTxt = '';
+    for (const e of elems) fullTxt += (e.textRun?.content || '');
+    const m = fullTxt.replace(/\n/g, '').trim().match(PX_RE);
+    if (!m) return;
+    const key = 'P' + m[1];
+    if (!STATE.photos[key] || excluded.includes(key)) return;
+    // Find insert position: first element's startIndex, delEnd = last content char
+    if (!elems.length) return;
+    const insertAt = elems[0].startIndex;
+    if (insertAt == null) return;
+    let contentEnd = insertAt;
+    for (const e of elems) {
+      const t = e.textRun?.content ?? '';
+      if (!t || t === '\n') continue;
+      const len = t.endsWith('\n') ? t.length - 1 : t.length;
+      if (len > 0) contentEnd = e.startIndex + len;
+    }
+    photoOps.push({ key, idx: insertAt, delEnd: contentEnd });
+  }
+
+  // ── Main content scanner ──────────────────────────────────────────
+  function scanContent(content) {
+    for (const el of (content || [])) {
+      if (el.paragraph) scanParagraph(el.paragraph);
+      if (el.table) {
+        for (const row of (el.table.tableRows || []))
+          for (const cell of (row.tableCells || []))
+            scanCell(cell);
+      }
+    }
+  }
+  scanContent(doc.body.content);
+
+  if (!photoOps.length) {
+    console.log('fillDocPhotos: no PX markers found (or no photos captured)');
+    return;
+  }
+  photoOps.sort((a, b) => b.idx - a.idx); // highest-index first
+
+  console.log('fillDocPhotos: uploading', photoOps.length, 'photos in parallel...');
+
+  // ── Upload ALL photos to Drive in parallel ────────────────────────
+  const uploadResults = await Promise.all(photoOps.map(async op => {
+    try {
+      const fid = await uploadTempPhoto(STATE.photos[op.key], op.key + '_tmp.jpg');
+      return { op, fid };
+    } catch(e) {
+      console.warn('Upload failed for', op.key, ':', e.message);
+      return { op, fid: null, error: e.message };
+    }
+  }));
+
+  const uploaded = uploadResults.filter(r => r.fid);
+
+  // ── Make all uploaded files public in parallel ────────────────────
+  await Promise.all(uploaded.map(r => makeFilePublic(r.fid)));
+
+  // Brief propagation pause (single wait for all, not per-photo)
+  if (uploaded.length) await new Promise(r => setTimeout(r, 300));
+
+  // ── Insert images sequentially (descending index — already sorted) ─
+  const errors = [];
+  for (const { op, fid } of uploaded) {
+    try {
+      const url = `https://drive.google.com/uc?export=view&id=${fid}`;
+      const reqs = [];
+      if (op.delEnd > op.idx)
+        reqs.push({ deleteContentRange: { range: { startIndex: op.idx, endIndex: op.delEnd } } });
+      // Use stored aspect ratio so text in the photo stays proportional.
+      // Target width ≈ 460 PT (near full text-width of a Google Doc page).
+      const aspect = (STATE.photoAspects || {})[op.key] || (4/3);
+      const docW = 460;
+      const docH = Math.round(docW / aspect);
+      reqs.push({
+        insertInlineImage: {
+          location: { index: op.idx },
+          uri: url,
+          objectSize: {
+            width:  { magnitude: docW, unit: 'PT' },
+            height: { magnitude: docH, unit: 'PT' },
+          },
+        }
+      });
+      await docsApiUpdate(docId, reqs);
+      console.log('Photo', op.key, 'embedded ✓');
+    } catch(e) {
+      console.warn('Photo', op.key, 'insert failed:', e.message);
+      errors.push(op.key + ': ' + e.message);
+    }
+  }
+
+  // ── Delete all temp files in parallel (photos now embedded in doc) ─
+  await Promise.all(uploaded.map(r => deleteDriveFile(r.fid)));
+
+  if (errors.length) {
+    const el = document.getElementById('saveResult');
+    if (el) el.innerHTML += `<div style="margin-top:8px;font-size:.82rem;color:#B71C1C;">
+      ⚠️ Some photos could not be embedded: ${errors.join('; ')}</div>`;
+  }
+}
+
+// ── Upload a data-URL as a temp Drive file, return file ID ────────
+async function uploadTempPhoto(dataUrl, filename) {
+  const blob     = await (await fetch(dataUrl)).blob();
+  const meta     = { name: filename, mimeType: 'image/jpeg' };
+  const boundary = 'PB_' + Math.random().toString(36).slice(2);
+  const metaStr  = JSON.stringify(meta);
+  const body = new Blob([
+    '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + metaStr + '\r\n' +
+    '--' + boundary + '\r\nContent-Type: image/jpeg\r\n\r\n',
+    blob,
+    '\r\n--' + boundary + '--'
+  ]);
+  const r = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+    { method:'POST', headers:{ Authorization:`Bearer ${STATE.accessToken}`,
+        'Content-Type':`multipart/related; boundary="${boundary}"` }, body }
+  );
+  const d = await r.json();
+  if (!r.ok) throw new Error('Photo upload: ' + (d.error?.message || r.status));
+  return d.id;
+}
+
+// ── Make a Drive file publicly readable (needed for Docs embed) ───
+// Returns true if successful, false otherwise.
+async function makeFilePublic(fileId) {
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+    { method:'POST',
+      headers:{ Authorization:`Bearer ${STATE.accessToken}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ role:'reader', type:'anyone' }) }
+  );
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({}));
+    console.warn('makeFilePublic failed:', e.error?.message || r.status);
+    return false;
+  }
+  return true;
+}
+
+// ── Delete a Drive file (clean up temp uploads) ───────────────────
+async function deleteDriveFile(fileId) {
+  try {
+    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`,
+      { method:'DELETE', headers:{ Authorization:`Bearer ${STATE.accessToken}` } });
+  } catch(e) { console.warn('Could not delete temp file', fileId); }
+}
+
+// ── Read a Google Doc structure ───────────────────────────────────
+async function readDoc(docId) {
+  const r = await fetch(`https://docs.googleapis.com/v1/documents/${docId}`,
+    { headers:{ Authorization:`Bearer ${STATE.accessToken}` } });
+  return r.json();
+}
+
+// ── Docs API batchUpdate ──────────────────────────────────────────
+async function docsApiUpdate(docId, requests) {
+  const r = await fetch(`https://docs.googleapis.com/v1/documents/${docId}:batchUpdate`,
+    { method:'POST', headers:{ Authorization:`Bearer ${STATE.accessToken}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ requests }) });
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({}));
+    const msg = e.error?.message || r.status;
+    const m = msg.match(/requests\[(\d+)\]/);
+    const detail = m ? ' | req[' + m[1] + ']=' + JSON.stringify(requests[+m[1]]) : '';
+    throw new Error('Docs API: ' + msg + detail);
+  }
+  return r.json();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOCUMENT HELPERS  (cellText / cellWritePos used by fillDocPhotos)
+// ═══════════════════════════════════════════════════════════════════
+
+
+// ── Get plain text content of a single cell ────────────────────────
+function cellText(cell) {
+  return (cell.content || [])
+    .flatMap(p => p.paragraph?.elements || [])
+    .map(e => e.textRun?.content || '')
+    .join('');
+}
+
+// ── Return write info for a cell: {idx, delEnd} ───────────────────
+// Operates ONLY on the first paragraph to avoid crossing paragraph
+// boundaries, which would delete paragraph terminators and corrupt
+// the document structure (causing "insertion index out of bounds").
+function cellWritePos(cell) {
+  const paragraphs = (cell.content || []).filter(el => el.paragraph);
+  if (!paragraphs.length) return null;
+
+  const elements = paragraphs[0].paragraph?.elements || [];
+  if (!elements.length) return null;
+
+  const insertAt = elements[0].startIndex;
+  if (insertAt == null) return null;
+
+  // Walk elements to find the end of real content (exclude trailing \n)
+  let contentEnd = insertAt;
+  for (const el of elements) {
+    const txt = el.textRun?.content ?? '';
+    if (!txt || txt === '\n') continue;       // skip pure-newline elements
+    const len = txt.endsWith('\n') ? txt.length - 1 : txt.length;
+    if (len > 0) contentEnd = el.startIndex + len;
+  }
+
+  return { idx: insertAt, delEnd: contentEnd, hasContent: contentEnd > insertAt };
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// MISC
+// ═══════════════════════════════════════════════════════════════════
+function startNewCommissioning() {
+  STATE.stationId = ''; STATE.stationName = ''; STATE.sheetRow = null;
+  STATE.commDateTime = '';
+  STATE.X4=null;STATE.X5=null;STATE.X6=null;STATE.X7=null;STATE.X8=null;STATE.X9=null;
+  STATE.X10=null;STATE.X11=null;STATE.X13=null;STATE.X14=null;STATE.X15=null;
+  STATE.X16=null;STATE.X17=null;STATE.X19=null;
+  STATE.X21=null;STATE.X21_auto=null;STATE.X23=null;STATE.X24=null;STATE.X25=null;
+  STATE.X26='Hydrostatic';STATE.X27=null;STATE.X28=null;STATE.X29='Open – U-Drain';
+  STATE.X30=null;STATE.drainIsOpen=true;
+  STATE.photos = {};STATE.photoAspects = {};
+  STATE.part2Rows = [];
+  STATE.offsetRow = null;
+  STATE.survey8a = null;
+  STATE.canalCondition = 'dry';
+  STATE.waterCalc = null;
+  STATE.pageHistory = ['page-lookup'];
+  const sr = document.getElementById('saveResult');
+  if (sr) { sr.innerHTML = ''; sr.style.display = 'none'; }
+  document.getElementById('stationIdInput').value = '';
+  document.getElementById('stationResult').style.display = 'none';
+  // Reset indicators UI
+  const ov = document.getElementById('x21OverrideInput'); if (ov) ov.value = '';
+  const x27m = document.getElementById('x27MeasInput'); if (x27m) x27m.value = '';
+  const dc = document.getElementById('drainCustom'); if (dc) dc.value = '';
+  document.querySelectorAll('.photo-preview').forEach(el => { el.src=''; el.classList.remove('show'); });
+  activatePage('page-lookup');
+}
+
+function formatDateTime(d) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ` +
+         `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function showSetupModal()  { document.getElementById('setupModal').classList.add('show'); }
+function hideSetupModal()  { document.getElementById('setupModal').classList.remove('show'); }
+
+// Close modal on background click
+document.getElementById('setupModal').addEventListener('click', function(e) {
+  if (e.target === this) hideSetupModal();
+});
+
+// condition section CSS rule (plain JS)
+const condStyle = document.createElement('style');
+condStyle.textContent = '.condition-section{display:none!important;} .condition-section.active{display:block!important;}';
+document.head.appendChild(condStyle);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
