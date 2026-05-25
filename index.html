@@ -7,9 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#2563eb">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>WL Station Commissioning</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -238,6 +238,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 <div class="app-bar" id="appBar">
   <button class="back-btn" id="backBtn" onclick="goBack()" style="display:none">&#8592;</button>
   <h1 id="appBarTitle">WL Station Commissioning</h1>
+  <button id="settingsBtn" onclick="toggleAdminPanel()"
+    style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:4px 8px;opacity:.7;"
+    title="Settings">⚙️</button>
 </div>
 <div class="progress-strip"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 
@@ -249,6 +252,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);
     <div class="wave">🌊</div>
     <h2>Station Commissioning</h2>
     <p>Water Level Monitoring System</p>
+  </div>
+
+  <!-- Admin settings — hidden until ⚙️ tapped -->
+  <div id="adminPanel" style="display:none;">
+    <div class="card" style="border:1.5px dashed var(--primary);background:var(--primary-light);">
+      <div class="card-title" style="font-size:.9rem;">⚙️ App Settings</div>
+      <div class="form-group">
+        <label class="form-label" style="font-size:.8rem;">Apps Script Token URL</label>
+        <input class="form-input" id="tokenEndpointInput" type="url"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          style="font-size:.78rem;"
+          oninput="saveTokenEndpoint(this.value)">
+      </div>
+      <p id="endpointStatus" style="font-size:.75rem;color:var(--success);display:none;">✓ Saved</p>
+    </div>
   </div>
 
   <div class="card" id="lookupCard">
@@ -725,6 +743,8 @@ const CFG = {
   sheetGid: 0,
   templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ',
   scopes: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly',
+  // Apps Script Web App URL — update after deploying apps-script/Code.gs
+  tokenEndpoint: localStorage.getItem('tokenEndpoint') || '',
   // Column indices (0-based) in the master sheet
   cols: {
     stationId:   1,   // B
@@ -892,6 +912,26 @@ const PART4_ITEMS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
+// ADMIN SETTINGS PANEL
+// ═══════════════════════════════════════════════════════════════════
+function toggleAdminPanel() {
+  const panel = document.getElementById('adminPanel');
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) {
+    const inp = document.getElementById('tokenEndpointInput');
+    if (inp) inp.value = CFG.tokenEndpoint || '';
+  }
+}
+
+function saveTokenEndpoint(val) {
+  CFG.tokenEndpoint = val.trim();
+  localStorage.setItem('tokenEndpoint', CFG.tokenEndpoint);
+  const st = document.getElementById('endpointStatus');
+  if (st) { st.style.display = 'block'; setTimeout(() => { st.style.display = 'none'; }, 2000); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SERVICE ACCOUNT TOKEN  (no user sign-in required)
 // ═══════════════════════════════════════════════════════════════════
 let _tokenExpiry = 0; // epoch ms when STATE.accessToken expires
@@ -900,7 +940,19 @@ async function ensureToken() {
   // Re-use cached token if still valid (with 60-s buffer)
   if (STATE.accessToken && Date.now() < _tokenExpiry - 60000) return;
 
-  const resp = await fetch('/api/get-token');
+  const endpoint = CFG.tokenEndpoint;
+  if (!endpoint) {
+    throw new Error(
+      'Token endpoint not configured. Open the app settings and paste your Apps Script Web App URL.'
+    );
+  }
+
+  // Apps Script Web Apps require a POST; use text/plain to avoid CORS preflight
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: '{}',
+  });
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({}));
     throw new Error('Could not get access token: ' + (body.error || resp.status));
@@ -1436,6 +1488,12 @@ function activatePage(pageId) {
   const pct = idx < 0 ? 0 : Math.round((idx / (PAGE_ORDER.length - 1)) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('backBtn').style.display = pageId === 'page-lookup' ? 'none' : 'inline';
+  const sb = document.getElementById('settingsBtn');
+  if (sb) sb.style.display = pageId === 'page-lookup' ? 'inline' : 'none';
+  if (pageId !== 'page-lookup') {
+    const ap = document.getElementById('adminPanel');
+    if (ap) ap.style.display = 'none';
+  }
   window.scrollTo(0, 0);
 }
 
@@ -2061,7 +2119,7 @@ condStyle.textContent = '.condition-section{display:none!important;} .condition-
 document.head.appendChild(condStyle);
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
 </body>

@@ -1,5 +1,5 @@
 const CACHE = 'commissioning-v1';
-const PRECACHE = ['/'];
+const PRECACHE = ['./'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)));
@@ -17,11 +17,9 @@ self.addEventListener('activate', e => {
 
 // Network-first: always try network, fall back to cache for navigation only
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  // Only intercept same-origin navigation requests
-  if (e.request.mode === 'navigate' && url.origin === self.location.origin) {
+  if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match('/'))
+      fetch(e.request).catch(() => caches.match('./'))
     );
   }
 });
