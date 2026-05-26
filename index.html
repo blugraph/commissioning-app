@@ -1746,19 +1746,20 @@ async function saveToGoogleDrive() {
     const parentId = await getParentFolderId();
     const filename = getFilename();
 
-    // 1 ── Copy the template via Apps Script (runs as real user → uses your
-    //      Drive quota, not the service account's zero-quota storage).
-    //      Apps Script then grants the service account editor access so we
-    //      can fill in text markers and photos with the steps below.
-    // Use GET for copyTemplate — Apps Script GET params always survive the
-    // 302 redirect intact, unlike POST bodies which are dropped.
-    const copyParams = new URLSearchParams({
-      action: 'copyTemplate',
-      templateId: CFG.templateDocId,
-      filename,
-      ...(parentId ? { parentId } : {}),
+    // 1 ── Copy the template via Apps Script POST (text/plain avoids CORS
+    //      preflight; POST body is read from e.postData.contents server-side).
+    //      Switched from GET to POST so iOS WebView redirect handling doesn't
+    //      drop query parameters on the 302 → exec redirect.
+    const copyResp = await fetch(CFG.tokenEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'copyTemplate',
+        templateId: CFG.templateDocId,
+        filename,
+        ...(parentId ? { parentId } : {}),
+      }),
     });
-    const copyResp = await fetch(`${CFG.tokenEndpoint}?${copyParams}`);
     if (!copyResp.ok) {
       const e = await copyResp.json().catch(() => ({}));
       throw new Error('Template copy failed: ' + (e.error || copyResp.status));

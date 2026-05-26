@@ -33,7 +33,8 @@ function doPost(e) {
         body = JSON.parse(e.postData.contents);
     } catch(_) {}
     var action = body.action || '';
-    if (action === 'fillPhotos') return fillPhotosAction(body);
+    if (action === 'copyTemplate') return copyTemplateAction(body);
+    if (action === 'fillPhotos')   return fillPhotosAction(body);
     return getTokenAction();
   } catch (err) {
     return respond({ error: err.message });
