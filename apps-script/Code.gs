@@ -50,18 +50,28 @@ function doPost(e) {
 // fill in the text markers and insert photos.
 
 function copyTemplateAction(params) {
+  console.log('copyTemplateAction: templateId=' + params.templateId +
+              ' parentId=' + params.parentId + ' filename=' + params.filename);
+
   var template = DriveApp.getFileById(params.templateId);
-  var folder   = params.parentId
-    ? DriveApp.getFolderById(params.parentId)
-    : DriveApp.getRootFolder();
+
+  // Try to use the requested parent folder; fall back to Drive root if
+  // access is denied (e.g. Shared Drive folder, or folder not owned by
+  // the script owner). This prevents "Access denied: DriveApp" crashes.
+  var folder = DriveApp.getRootFolder();
+  if (params.parentId) {
+    try {
+      folder = DriveApp.getFolderById(params.parentId);
+      console.log('copyTemplateAction: using parent folder ' + params.parentId);
+    } catch(e) {
+      console.log('copyTemplateAction: cannot access parentId ' + params.parentId +
+                  ' (' + e.message + '), falling back to Drive root');
+    }
+  }
 
   var copy = template.makeCopy(params.filename, folder);
-
-  // Make the doc editable by anyone with the link so the service account
-  // (and the Docs/Drive API calls from the app) can fill in text and photos
-  // immediately — no per-user permission propagation delay.
   copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
-
+  console.log('copyTemplateAction: created docId=' + copy.getId());
   return respond({ docId: copy.getId(), url: copy.getUrl() });
 }
 
