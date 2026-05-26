@@ -1743,13 +1743,12 @@ async function saveToGoogleDrive() {
 
   try {
     await ensureToken();
-    const parentId = await getParentFolderId();
     const filename = getFilename();
 
     // 1 ── Copy the template via Apps Script POST (text/plain avoids CORS
     //      preflight; POST body is read from e.postData.contents server-side).
-    //      Switched from GET to POST so iOS WebView redirect handling doesn't
-    //      drop query parameters on the 302 → exec redirect.
+    //      No parentId sent — the Shared Drive parent folder causes DriveApp
+    //      "Access denied" even with try/catch. Document saves to Drive root.
     const copyResp = await fetch(CFG.tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -1757,7 +1756,6 @@ async function saveToGoogleDrive() {
         action: 'copyTemplate',
         templateId: CFG.templateDocId,
         filename,
-        ...(parentId ? { parentId } : {}),
       }),
     });
     if (!copyResp.ok) {
@@ -1782,7 +1780,7 @@ async function saveToGoogleDrive() {
       <div style="background:#E8F5E9;border-radius:8px;padding:12px;color:#1B5E20;">
         ✅ <b>Saved to Google Drive!</b><br>
         <a href="${fileUrl}" target="_blank" style="color:#1565C0;word-break:break-all;">${filename}</a><br>
-        <small>${parentId ? 'Saved to same folder as master spreadsheet.' : 'Saved to Drive root.'}</small>
+        <small>Saved to your Google Drive.</small>
       </div>`;
     result.style.display = 'block';
 
