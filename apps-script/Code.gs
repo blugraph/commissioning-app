@@ -54,22 +54,29 @@ function copyTemplateAction(params) {
               ' parentId=' + params.parentId + ' filename=' + params.filename);
 
   var template = DriveApp.getFileById(params.templateId);
+  var root     = DriveApp.getRootFolder();
+  var copy;
 
-  // Try to use the requested parent folder; fall back to Drive root if
-  // access is denied (e.g. Shared Drive folder, or folder not owned by
-  // the script owner). This prevents "Access denied: DriveApp" crashes.
-  var folder = DriveApp.getRootFolder();
+  // Attempt 1: copy into the spreadsheet's parent folder.
+  // Wrap BOTH getFolderById AND makeCopy — on Shared Drives the folder object
+  // can be retrieved successfully but makeCopy into it still throws "Access denied".
   if (params.parentId) {
     try {
-      folder = DriveApp.getFolderById(params.parentId);
-      console.log('copyTemplateAction: using parent folder ' + params.parentId);
+      var folder = DriveApp.getFolderById(params.parentId);
+      copy = template.makeCopy(params.filename, folder);
+      console.log('copyTemplateAction: saved to parent folder ' + params.parentId);
     } catch(e) {
-      console.log('copyTemplateAction: cannot access parentId ' + params.parentId +
-                  ' (' + e.message + '), falling back to Drive root');
+      console.log('copyTemplateAction: parent folder failed (' + e.message +
+                  '), falling back to Drive root');
     }
   }
 
-  var copy = template.makeCopy(params.filename, folder);
+  // Attempt 2 (fallback): copy into Drive root.
+  if (!copy) {
+    copy = template.makeCopy(params.filename, root);
+    console.log('copyTemplateAction: saved to Drive root');
+  }
+
   copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
   console.log('copyTemplateAction: created docId=' + copy.getId());
   return respond({ docId: copy.getId(), url: copy.getUrl() });
