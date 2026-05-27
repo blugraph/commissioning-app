@@ -62,10 +62,19 @@ function getOutputFolder() {
 
 function copyTemplateAction(params) {
   console.log('copyTemplateAction: templateId=' + params.templateId +
-              ' filename=' + params.filename);
+              ' filename=' + params.filename +
+              ' parentId=' + params.parentId);
 
   var template = DriveApp.getFileById(params.templateId);
-  var folder   = getOutputFolder();   // always "Commissioning Reports" in My Drive
+
+  // Use the caller-supplied folder if provided, otherwise fall back to the
+  // self-managed "Commissioning Reports" folder in the script owner's My Drive.
+  var folder;
+  if (params.parentId) {
+    folder = DriveApp.getFolderById(params.parentId);
+  } else {
+    folder = getOutputFolder();
+  }
 
   var copy = template.makeCopy(params.filename, folder);
   copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
