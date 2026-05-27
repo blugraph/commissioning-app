@@ -228,9 +228,54 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 .mt-12{margin-top:12px;}
 .row{display:flex;gap:10px;}
 .row .btn{flex:1;}
+
+/* ── Login screen ── */
+#loginScreen{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+#loginScreen.hidden{display:none;}
+.login-card{
+  background:#fff;border-radius:16px;padding:36px 28px;
+  max-width:380px;width:100%;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+  text-align:center;
+}
+.login-logo{font-size:3.2rem;margin-bottom:8px;}
+.login-title{color:var(--primary-dark);font-size:1.25rem;font-weight:700;margin-bottom:4px;}
+.login-sub{color:var(--text2);font-size:.82rem;margin-bottom:26px;}
+.login-error{color:var(--danger);font-size:.84rem;margin-top:10px;min-height:20px;}
 </style>
 </head>
 <body>
+
+<!-- ════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🌊</div>
+    <div class="login-title">WL Station Commissioning</div>
+    <div class="login-sub">Water Level Monitoring System</div>
+    <div class="form-group" style="text-align:left;">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="loginUser" type="text"
+        autocomplete="username" autocapitalize="none" spellcheck="false"
+        placeholder="Enter username"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+    </div>
+    <div class="form-group" style="text-align:left;">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="loginPass" type="password"
+        autocomplete="current-password"
+        placeholder="Enter password"
+        onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">🔑 Login</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════
      APP BAR
@@ -266,6 +311,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);
           oninput="saveTokenEndpoint(this.value)">
       </div>
       <p id="endpointStatus" style="font-size:.75rem;color:var(--success);display:none;">✓ Saved</p>
+      <button class="btn btn-danger btn-full mt-8" style="font-size:.85rem;padding:10px;" onclick="doLogout()">
+        🚪 Log Out
+      </button>
     </div>
   </div>
 
@@ -2078,6 +2126,48 @@ document.head.appendChild(condStyle);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── Login / session ────────────────────────────────────────────────
+const LOGIN_KEY = 'blgh_session';
+
+function doLogin() {
+  const u = (document.getElementById('loginUser').value || '').trim();
+  const p = document.getElementById('loginPass').value || '';
+  if (u === 'blgh' && p === 'bg123456') {
+    localStorage.setItem(LOGIN_KEY, '1');
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  } else {
+    const err = document.getElementById('loginError');
+    err.textContent = '❌ Invalid username or password.';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+    // shake animation
+    const card = document.querySelector('.login-card');
+    card.style.animation = 'none';
+    card.offsetHeight; // reflow
+    card.style.animation = 'loginShake .35s ease';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem(LOGIN_KEY);
+  location.reload();
+}
+
+// Shake keyframes
+(function(){
+  const s = document.createElement('style');
+  s.textContent = '@keyframes loginShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';
+  document.head.appendChild(s);
+})();
+
+// Restore session on load
+if (localStorage.getItem(LOGIN_KEY)) {
+  document.getElementById('loginScreen').classList.add('hidden');
 }
 </script>
 </body>
