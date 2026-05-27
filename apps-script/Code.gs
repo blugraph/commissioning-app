@@ -49,36 +49,28 @@ function doPost(e) {
 // After copying, it grants the service account editor access so it can
 // fill in the text markers and insert photos.
 
+// Returns (or creates) a "Commissioning Reports" folder in the script
+// owner's My Drive — always accessible since it's the same account.
+function getOutputFolder() {
+  var NAME = 'Commissioning Reports';
+  var iter = DriveApp.getFoldersByName(NAME);
+  if (iter.hasNext()) return iter.next();
+  var folder = DriveApp.createFolder(NAME);
+  console.log('getOutputFolder: created new folder ' + folder.getId());
+  return folder;
+}
+
 function copyTemplateAction(params) {
   console.log('copyTemplateAction: templateId=' + params.templateId +
-              ' parentId=' + params.parentId + ' filename=' + params.filename);
+              ' filename=' + params.filename);
 
   var template = DriveApp.getFileById(params.templateId);
-  var root     = DriveApp.getRootFolder();
-  var copy;
+  var folder   = getOutputFolder();   // always "Commissioning Reports" in My Drive
 
-  // Attempt 1: copy into the spreadsheet's parent folder.
-  // Wrap BOTH getFolderById AND makeCopy — on Shared Drives the folder object
-  // can be retrieved successfully but makeCopy into it still throws "Access denied".
-  if (params.parentId) {
-    try {
-      var folder = DriveApp.getFolderById(params.parentId);
-      copy = template.makeCopy(params.filename, folder);
-      console.log('copyTemplateAction: saved to parent folder ' + params.parentId);
-    } catch(e) {
-      console.log('copyTemplateAction: parent folder failed (' + e.message +
-                  '), falling back to Drive root');
-    }
-  }
-
-  // Attempt 2 (fallback): copy into Drive root.
-  if (!copy) {
-    copy = template.makeCopy(params.filename, root);
-    console.log('copyTemplateAction: saved to Drive root');
-  }
-
+  var copy = template.makeCopy(params.filename, folder);
   copy.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
-  console.log('copyTemplateAction: created docId=' + copy.getId());
+  console.log('copyTemplateAction: created docId=' + copy.getId() +
+              ' in folder=' + folder.getId());
   return respond({ docId: copy.getId(), url: copy.getUrl() });
 }
 
