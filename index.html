@@ -729,6 +729,7 @@ const CFG = {
   spreadsheetId: '13qNfGkeo6c9hYy4uTlCSXOaoI3az8uQPyqKdZXMunD4',
   sheetGid: 0,
   templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ',
+  targetFolderId: '1M50ZKOkqFIhqitB82mao0U9FSXqQeVMb', // Shared Drive output folder
   scopes: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly',
   // Apps Script Web App URL — update after deploying apps-script/Code.gs
   // Hardcoded so all phones work without manual settings configuration.
@@ -1747,8 +1748,8 @@ async function saveToGoogleDrive() {
 
     // 1 ── Copy the template via Apps Script POST (text/plain avoids CORS
     //      preflight; POST body is read from e.postData.contents server-side).
-    //      No parentId sent — the Shared Drive parent folder causes DriveApp
-    //      "Access denied" even with try/catch. Document saves to Drive root.
+    //      Use CFG.targetFolderId (personal Drive folder) — NOT the spreadsheet's
+    //      Shared Drive parent which DriveApp cannot write to.
     const copyResp = await fetch(CFG.tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -1756,6 +1757,7 @@ async function saveToGoogleDrive() {
         action: 'copyTemplate',
         templateId: CFG.templateDocId,
         filename,
+        ...(CFG.targetFolderId ? { parentId: CFG.targetFolderId } : {}),
       }),
     });
     if (!copyResp.ok) {
@@ -1780,7 +1782,7 @@ async function saveToGoogleDrive() {
       <div style="background:#E8F5E9;border-radius:8px;padding:12px;color:#1B5E20;">
         ✅ <b>Saved to Google Drive!</b><br>
         <a href="${fileUrl}" target="_blank" style="color:#1565C0;word-break:break-all;">${filename}</a><br>
-        <small>Saved to your Google Drive.</small>
+        <small>Saved to Commissioning Reports folder.</small>
       </div>`;
     result.style.display = 'block';
 
