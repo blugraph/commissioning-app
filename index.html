@@ -1813,10 +1813,9 @@ async function saveToGoogleDrive() {
       throw new Error('Template copy failed: ' + (e.error || copyResp.status));
     }
     const copyData = await copyResp.json();
-    if (copyData.error) throw new Error('Template copy failed: ' + copyData.error);
+    if (copyData.error) throw new Error('Drive error: ' + copyData.error);
     if (!copyData.docId) throw new Error(
-      'Template copy returned no document ID. ' +
-      'Please redeploy the Apps Script with the latest Code.gs (New version → Deploy).'
+      'Apps Script returned no docId — raw response: ' + JSON.stringify(copyData)
     );
     const newDocId = copyData.docId;
 
