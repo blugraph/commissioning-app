@@ -612,47 +612,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);
   <div class="section-hdr">Site Documentation Photos</div>
 
   <div class="card">
-    <div class="card-title">P3 – Tape &amp; Pipe</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of tape and pipe measurement setup</p>
-    <div class="photo-zone" id="P3Zone">
-      <input type="file" accept="image/*" id="photoP3" onchange="handlePhoto(this,'P3','P3Preview','P3Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P3Preview" class="photo-preview" alt="Tape & pipe photo">
-  </div>
+    <div class="card-title">Site Documentation Photos</div>
+    <div class="sms-grid">
 
-  <div class="card">
-    <div class="card-title">P4 – Station</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Overall photo of the station installation</p>
-    <div class="photo-zone" id="P4Zone">
-      <input type="file" accept="image/*" id="photoP4" onchange="handlePhoto(this,'P4','P4Preview','P4Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P4Preview" class="photo-preview" alt="Station photo">
-  </div>
+      <div class="sms-cell">
+        <div class="sms-label">P3 – Tape &amp; Pipe</div>
+        <div class="photo-zone sms-zone" id="P3Zone">
+          <input type="file" accept="image/*" id="photoP3" onchange="handlePhoto(this,'P3','P3Preview','P3Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P3Preview" class="photo-preview sms-preview" alt="Tape & pipe photo">
+      </div>
 
-  <div class="card">
-    <div class="card-title">P5 – Footing</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of station footing / foundation</p>
-    <div class="photo-zone" id="P5Zone">
-      <input type="file" accept="image/*" id="photoP5" onchange="handlePhoto(this,'P5','P5Preview','P5Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P5Preview" class="photo-preview" alt="Footing photo">
-  </div>
+      <div class="sms-cell">
+        <div class="sms-label">P4 – Station</div>
+        <div class="photo-zone sms-zone" id="P4Zone">
+          <input type="file" accept="image/*" id="photoP4" onchange="handlePhoto(this,'P4','P4Preview','P4Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P4Preview" class="photo-preview sms-preview" alt="Station photo">
+      </div>
 
-  <div class="card">
-    <div class="card-title">P6 – Internal</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of internal enclosure / data logger</p>
-    <div class="photo-zone" id="P6Zone">
-      <input type="file" accept="image/*" id="photoP6" onchange="handlePhoto(this,'P6','P6Preview','P6Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
+      <div class="sms-cell">
+        <div class="sms-label">P5 – Footing</div>
+        <div class="photo-zone sms-zone" id="P5Zone">
+          <input type="file" accept="image/*" id="photoP5" onchange="handlePhoto(this,'P5','P5Preview','P5Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P5Preview" class="photo-preview sms-preview" alt="Footing photo">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">P6 – Internal</div>
+        <div class="photo-zone sms-zone" id="P6Zone">
+          <input type="file" accept="image/*" id="photoP6" onchange="handlePhoto(this,'P6','P6Preview','P6Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P6Preview" class="photo-preview sms-preview" alt="Internal photo">
+      </div>
+
     </div>
-    <img id="P6Preview" class="photo-preview" alt="Internal photo">
   </div>
 
   <div class="bottom-bar">
@@ -668,46 +671,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);
   <div class="section-hdr">Monitoring System Photos</div>
 
   <div class="card">
-    <div class="card-title">P7 – Panel Height</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo showing panel / enclosure height measurement</p>
-    <div class="photo-zone" id="P7Zone">
-      <input type="file" accept="image/*" id="photoP7" onchange="handlePhoto(this,'P7','P7Preview','P7Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P7Preview" class="photo-preview" alt="Panel height photo">
-  </div>
+    <div class="card-title">Monitoring System Photos</div>
+    <div class="sms-grid">
 
-  <div class="card">
-    <div class="card-title">P10 – Water Level</div>
-    <div class="photo-zone" id="P10Zone">
-      <input type="file" accept="image/*" id="photoP10" onchange="handlePhoto(this,'P10','P10Preview','P10Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P10Preview" class="photo-preview" alt="Water level photo">
-  </div>
+      <div class="sms-cell">
+        <div class="sms-label">P7 – Panel Height</div>
+        <div class="photo-zone sms-zone" id="P7Zone">
+          <input type="file" accept="image/*" id="photoP7" onchange="handlePhoto(this,'P7','P7Preview','P7Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P7Preview" class="photo-preview sms-preview" alt="Panel height photo">
+      </div>
 
-  <div class="card">
-    <div class="card-title">P12 – Metadata</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Photo of logger display / metadata screen</p>
-    <div class="photo-zone" id="P12Zone">
-      <input type="file" accept="image/*" id="photoP12" onchange="handlePhoto(this,'P12','P12Preview','P12Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
-    </div>
-    <img id="P12Preview" class="photo-preview" alt="Metadata photo">
-  </div>
+      <div class="sms-cell">
+        <div class="sms-label">P10 – Water Level</div>
+        <div class="photo-zone sms-zone" id="P10Zone">
+          <input type="file" accept="image/*" id="photoP10" onchange="handlePhoto(this,'P10','P10Preview','P10Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P10Preview" class="photo-preview sms-preview" alt="Water level photo">
+      </div>
 
-  <div class="card">
-    <div class="card-title">P13 – Final Website</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">Screenshot of the final website / PSeP dashboard with live data</p>
-    <div class="photo-zone" id="P13Zone">
-      <input type="file" accept="image/*" id="photoP13" onchange="handlePhoto(this,'P13','P13Preview','P13Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Tap to take photo or choose from gallery</span>
+      <div class="sms-cell">
+        <div class="sms-label">P12 – Metadata</div>
+        <div class="photo-zone sms-zone" id="P12Zone">
+          <input type="file" accept="image/*" id="photoP12" onchange="handlePhoto(this,'P12','P12Preview','P12Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P12Preview" class="photo-preview sms-preview" alt="Metadata photo">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">P13 – Final Website</div>
+        <div class="photo-zone sms-zone" id="P13Zone">
+          <input type="file" accept="image/*" id="photoP13" onchange="handlePhoto(this,'P13','P13Preview','P13Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P13Preview" class="photo-preview sms-preview" alt="Final website photo">
+      </div>
+
     </div>
-    <img id="P13Preview" class="photo-preview" alt="Final website photo">
   </div>
 
   <div class="bottom-bar">
