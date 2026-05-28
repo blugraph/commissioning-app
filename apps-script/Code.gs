@@ -85,10 +85,9 @@ function copyTemplateAction(params) {
 
 // ── Action: embed photos directly into a Google Doc ──────────────
 // Receives base64 JPEGs (already resized on the user's device) and
-// uses DocumentApp to:
-//   1. Replace in-place markers (P1, P7 … S1-S4) throughout the doc
-//   2. Append a "Photo Evidence" gallery page at the end with ALL
-//      photos together in a compact 3-column grid, no cropping.
+// uses DocumentApp to replace every in-place marker (P1-P16, S1-S4)
+// with the corresponding image.  Each image is sized to fit its
+// container (table cell or full text width) — no cropping.
 //
 // body = { docId, photos: { P1: 'data:image/jpeg;base64,…', … } }
 
@@ -104,7 +103,6 @@ function fillPhotosAction(body) {
   var docBody = doc.getBody();
   var errors  = [];
 
-  // 1 ── Replace in-place markers throughout the document ──────────
   for (var key in photos) {
     try {
       var b64   = photos[key].replace(/^data:image\/\w+;base64,/, '');
@@ -120,108 +118,15 @@ function fillPhotosAction(body) {
     }
   }
 
-  // 2 ── Append photo gallery page at the end ──────────────────────
-  try {
-    appendPhotoGallery(docBody, photos);
-    console.log('fillPhotosAction: gallery page appended ✓');
-  } catch(err) {
-    console.log('fillPhotosAction: gallery error: ' + err.message);
-    errors.push('gallery: ' + err.message);
-  }
-
   doc.saveAndClose();
   console.log('fillPhotosAction: done, errors=[' + errors.join('; ') + ']');
   return respond({ ok: true, errors: errors });
 }
 
-// ── Append a photo gallery page at the end of the document ──────────
-// All photos are placed in a 3-column grid.  Each image is scaled to
-// fit the column width (no cropping); portrait shots remain portrait.
-function appendPhotoGallery(docBody, photos) {
-
-  // Canonical display order
-  var ORDER  = ['P1','P2','P3','P4','P5','P6','P7',
-                'P10','P11','P12','P13','P14','P15','P16',
-                'S1','S2','S3','S4'];
-  var LABELS = {
-    P1:'Sensor / Dry Canal',     P2:'Water Level Meas.',
-    P3:'Tape & Pipe',            P4:'Station View',
-    P5:'Footing',                P6:'Internal',
-    P7:'Panel Height',           P10:'Water Level Display',
-    P11:'Station ID Label',      P12:'Metadata Screen',
-    P13:'Website Dashboard',     P14:'Dual SIM Cards',
-    P15:'3-Point Calibration',   P16:'Dashboard Screenshot',
-    S1:'SMS Alert 1',            S2:'SMS Alert 2',
-    S3:'SMS Alert 3',            S4:'SMS Alert 4'
-  };
-
-  // Build ordered list of keys that actually have photo data
-  var keys = ORDER.filter(function(k) { return !!photos[k]; });
-  // Append any extra keys not in ORDER (future-proof)
-  Object.keys(photos).forEach(function(k) {
-    if (ORDER.indexOf(k) === -1 && photos[k]) keys.push(k);
-  });
-  if (keys.length === 0) return;
-
-  var COLS  = 3;
-  var IMG_W = 140; // points — max image width per cell
-
-  // ── Title on a new page ──────────────────────────────────────────
-  var title = docBody.appendParagraph('Photo Evidence');
-  title.setPageBreakBefore(true);
-  title.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-  title.editAsText().setFontSize(14).setBold(true);
-  // Small breathing room below the heading
-  title.setSpacingAfter(8);
-
-  // ── 3-column photo table ─────────────────────────────────────────
-  var numRows = Math.ceil(keys.length / COLS);
-  var table = docBody.appendTable();
-
-  for (var r = 0; r < numRows; r++) {
-    var tr = table.appendTableRow();
-    for (var c = 0; c < COLS; c++) {
-      var idx  = r * COLS + c;
-      var cell = tr.appendTableCell();
-      cell.setPaddingTop(4);
-      cell.setPaddingBottom(4);
-      cell.setPaddingLeft(4);
-      cell.setPaddingRight(4);
-
-      if (idx < keys.length) {
-        var key = keys[idx];
-
-        // Label (reuse the empty paragraph that exists when cell is created)
-        var labelPara = cell.getChild(0).asParagraph();
-        labelPara.setText((LABELS[key] || key) + ' (' + key + ')');
-        labelPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-        labelPara.editAsText().setFontSize(7).setBold(true).setForegroundColor('#444444');
-        labelPara.setSpacingAfter(2);
-
-        // Photo — resize to column width, no cropping
-        try {
-          var b64   = photos[key].replace(/^data:image\/\w+;base64,/, '');
-          var bytes = Utilities.base64Decode(b64);
-          var blob  = Utilities.newBlob(bytes, 'image/jpeg', key + '.jpg');
-          var imgPara = cell.appendParagraph('');
-          imgPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-          imgPara.setSpacingBefore(0);
-          imgPara.setSpacingAfter(0);
-          var img = imgPara.appendInlineImage(blob);
-          sizeGalleryImg(img, IMG_W);
-        } catch(err) {
-          cell.appendParagraph('(error)');
-          console.log('gallery ' + key + ': ' + err.message);
-        }
-      }
-    }
-  }
-}
-
 // Uses body.findText() — searches the ENTIRE document recursively,
 // including nested tables, so no manual tree walking needed.
 // Finds the paragraph whose full text (trimmed) equals the marker,
-// clears it, then inserts the image directly in its place.
+// removes it, then inserts the image sized to fit its container.
 function replaceMarkerWithImage(body, marker, blob) {
   var hit = body.findText(marker);
   while (hit) {
@@ -236,25 +141,26 @@ function replaceMarkerWithImage(body, marker, blob) {
 
       if (container.getType() === DocumentApp.ElementType.TABLE_CELL) {
         // ── Marker is inside a table cell ──────────────────────
-        // Remove ONLY the Pn paragraph – keep the title paragraph(s) above it
-        var cell     = container.asTableCell();
-        var paraIdx  = cell.getChildIndex(para);
-        para.removeFromParent();              // remove only the "Pn" marker
+        // Size the image to fit the actual column width so it never
+        // overflows the cell and is never cropped.
+        var cell    = container.asTableCell();
+        var paraIdx = cell.getChildIndex(para);
+        para.removeFromParent();
         var p = cell.insertParagraph(paraIdx, '');
         p.setAttributes({
           [DocumentApp.Attribute.SPACING_BEFORE]: 0,
           [DocumentApp.Attribute.SPACING_AFTER]:  0
         });
         var img = p.appendInlineImage(blob);
-        sizeImage(img);
+        sizeImage(img, cellMaxWidth(cell));
 
       } else {
         // ── Marker is a standalone paragraph in the body ────────
         var idx = body.getChildIndex(para);
         var p   = body.insertParagraph(idx, '');
         var img = p.appendInlineImage(blob);
-        sizeImage(img);
-        para.removeFromParent();              // remove the Pn paragraph
+        sizeImage(img, 460);                  // full A4 text width
+        para.removeFromParent();
       }
       return true;
     }
@@ -263,23 +169,31 @@ function replaceMarkerWithImage(body, marker, blob) {
   return false;                               // marker not found
 }
 
-// Scale image to fit within the doc's text width (≈ 460 pt for A4).
-function sizeImage(img) {
-  var MAX_W = 460; // points  (~16.2 cm on A4 with default margins)
-  var w = img.getWidth();
-  var h = img.getHeight();
-  if (w > MAX_W) {
-    img.setHeight(Math.round(h * MAX_W / w));
-    img.setWidth(MAX_W);
-  }
+// Returns the usable inner width (points) of a table cell.
+// Reads the column width via Table.getColumnWidth() and subtracts
+// cell padding.  Falls back to 220 pt (safe for a 2-column A4 table).
+function cellMaxWidth(cell) {
+  try {
+    var row    = cell.getParentRow();
+    var table  = row.getParentTable();
+    var colIdx = row.getChildIndex(cell);
+    var colW   = table.getColumnWidth(colIdx);   // points, or null/0 if auto
+    if (colW && colW > 0) {
+      var pad = (cell.getPaddingLeft()  || 0)
+              + (cell.getPaddingRight() || 0);
+      return Math.max(colW - pad, 40);
+    }
+  } catch(e) { /* column width unavailable — use fallback */ }
+  return 220; // safe default for a 2-column A4 layout
 }
 
-// Scale gallery thumbnail to fit within maxW, preserve aspect ratio — no cropping.
-function sizeGalleryImg(img, maxW) {
+// Scale image to fit within maxW points, preserve aspect ratio — no cropping.
+function sizeImage(img, maxW) {
+  var limit = maxW || 460;
   var w = img.getWidth(), h = img.getHeight();
-  if (w > maxW) {
-    img.setHeight(Math.round(h * maxW / w));
-    img.setWidth(maxW);
+  if (w > limit) {
+    img.setHeight(Math.round(h * limit / w));
+    img.setWidth(limit);
   }
 }
 
