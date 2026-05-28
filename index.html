@@ -154,12 +154,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);
   color:var(--text2);font-size:.8rem;display:block;margin-top:4px;
 }
 .photo-preview{
-  width:100%;height:auto;max-height:500px;
-  object-fit:contain;border-radius:var(--radius);
+  width:100%;height:auto;
+  border-radius:var(--radius);
   display:none;margin-top:10px;border:1px solid var(--border);
 }
 .photo-preview.show{display:block;}
-.photo-preview.sq{max-height:400px;max-width:400px;margin:8px auto;}
+.photo-preview.sq{max-width:400px;margin:8px auto;}
+
+/* ── SMS screenshot grid ── */
+.sms-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sms-cell{display:flex;flex-direction:column;}
+.sms-label{font-size:.75rem;font-weight:600;color:var(--text2);
+  text-align:center;margin-bottom:4px;}
+.sms-zone{padding:14px 8px !important;}
+.sms-zone .ph-icon{font-size:1.8rem !important;margin-bottom:4px !important;}
+.sms-zone .ph-label{font-size:.75rem !important;}
+.sms-zone .ph-sub{display:none !important;}
+.sms-preview{border-radius:var(--radius);margin-top:6px;}
 
 /* ── Toggle buttons (dry/water) ── */
 .toggle-group{display:flex;gap:8px;margin:10px 0;}
@@ -580,7 +591,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       Photo of station ID label affixed to data logger enclosure:
     </p>
     <div class="photo-zone" id="P11Zone">
-      <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',350,350)">
+      <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',600)">
       <span class="ph-icon">📷</span>
       <span class="ph-label">Station ID Label</span>
       <span class="ph-sub">Tap to capture photo</span>
@@ -697,6 +708,70 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       <span class="ph-label">Tap to take photo or choose from gallery</span>
     </div>
     <img id="P13Preview" class="photo-preview" alt="Final website photo">
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
+    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-photos-sms')">
+      📱 SMS Screenshots →
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PAGE – SMS SCREENSHOTS
+════════════════════════════════════════════ -->
+<div class="page" id="page-photos-sms">
+  <div class="section-hdr">SMS Screenshots</div>
+
+  <div class="card">
+    <div class="card-title">📱 SMS Confirmation Screenshots</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;">
+      Add up to 4 SMS / alert screenshots as evidence. All 4 are optional.
+    </p>
+    <div class="sms-grid">
+
+      <div class="sms-cell">
+        <div class="sms-label">SMS 1</div>
+        <div class="photo-zone sms-zone" id="S1Zone">
+          <input type="file" accept="image/*" id="photoS1" onchange="handlePhoto(this,'S1','S1Preview','S1Zone')">
+          <span class="ph-icon">📱</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="S1Preview" class="photo-preview sms-preview" alt="SMS 1">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">SMS 2</div>
+        <div class="photo-zone sms-zone" id="S2Zone">
+          <input type="file" accept="image/*" id="photoS2" onchange="handlePhoto(this,'S2','S2Preview','S2Zone')">
+          <span class="ph-icon">📱</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="S2Preview" class="photo-preview sms-preview" alt="SMS 2">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">SMS 3</div>
+        <div class="photo-zone sms-zone" id="S3Zone">
+          <input type="file" accept="image/*" id="photoS3" onchange="handlePhoto(this,'S3','S3Preview','S3Zone')">
+          <span class="ph-icon">📱</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="S3Preview" class="photo-preview sms-preview" alt="SMS 3">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">SMS 4</div>
+        <div class="photo-zone sms-zone" id="S4Zone">
+          <input type="file" accept="image/*" id="photoS4" onchange="handlePhoto(this,'S4','S4Preview','S4Zone')">
+          <span class="ph-icon">📱</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="S4Preview" class="photo-preview sms-preview" alt="SMS 4">
+      </div>
+
+    </div>
   </div>
 
   <!-- Summary + Save -->
@@ -974,7 +1049,8 @@ function saveTokenEndpoint(val) {
 // ═══════════════════════════════════════════════════════════════════
 function fillTestPhotos() {
   const allKeys = ['P1','P2','P3','P4','P5','P6','P7',
-                   'P10','P11','P12','P13','P14','P15','P16'];
+                   'P10','P11','P12','P13','P14','P15','P16',
+                   'S1','S2','S3','S4'];
   const palette = [
     '#1565C0','#2E7D32','#C62828','#FF8F00','#4527A0',
     '#00695C','#37474F','#AD1457','#00838F','#558B2F',
@@ -1486,25 +1562,22 @@ function triggerPhoto(inputId) {
   document.getElementById(inputId).click();
 }
 
-function handlePhoto(input, key, previewId, zoneId, maxW, maxH) {
+function handlePhoto(input, key, previewId, zoneId, maxW) {
   const file = input.files[0];
   if (!file) return;
-  // Default 1344×1008 (1920×1440 reduced by 30%) — keeps text legible at lower payload
-  resizeAndStore(file, key, previewId, zoneId, maxW || 1344, maxH || 1008);
+  // Scale to maxW wide (default 1344 px), height follows aspect ratio — no height cap.
+  resizeAndStore(file, key, previewId, zoneId, maxW || 1344);
 }
 
-function resizeAndStore(file, key, previewId, zoneId, maxW, maxH) {
+function resizeAndStore(file, key, previewId, zoneId, maxW) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
-      // Scale to fit within bounds, preserve aspect ratio
-      let w = img.width, h = img.height;
-      const ratio = w / h;
-      if (w > maxW || h > maxH) {
-        if (w / maxW >= h / maxH) { w = maxW; h = Math.round(w / ratio); }
-        else                       { h = maxH; w = Math.round(h * ratio); }
-      }
+      // Scale down to maxW width only — height follows aspect ratio, never clipped.
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
 
       // Store aspect ratio for proportional sizing when inserting into doc
       STATE.photoAspects = STATE.photoAspects || {};
@@ -1548,7 +1621,7 @@ function resizeAndStore(file, key, previewId, zoneId, maxW, maxH) {
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
-const PAGE_ORDER = ['page-lookup','page-indicators','page-part3','page-part4','page-photos-site','page-photos-monitor'];
+const PAGE_ORDER = ['page-lookup','page-indicators','page-part3','page-part4','page-photos-site','page-photos-monitor','page-photos-sms'];
 const PAGE_TITLES = {
   'page-lookup':         'WL Station Commissioning',
   'page-indicators':     'Indicators & Sensor Setup',
@@ -1557,6 +1630,7 @@ const PAGE_TITLES = {
   'page-part4':          'Part 4 – Configuration',
   'page-photos-site':    'Site Documentation Photos',
   'page-photos-monitor': 'Monitoring System Photos',
+  'page-photos-sms':     'SMS Screenshots',
 };
 
 function goToPage(pageId) {
@@ -1566,7 +1640,7 @@ function goToPage(pageId) {
   activatePage(pageId);
   // Special init for certain pages
   if (pageId === 'page-indicators') refreshIndicatorsDisplay();
-  if (pageId === 'page-photos-monitor') updateSavePageSummary();
+  if (pageId === 'page-photos-sms') updateSavePageSummary();
 }
 
 function goBack() {
@@ -2101,6 +2175,12 @@ function startNewCommissioning() {
   const x27m = document.getElementById('x27MeasInput'); if (x27m) x27m.value = '';
   const dc = document.getElementById('drainCustom'); if (dc) dc.value = '';
   document.querySelectorAll('.photo-preview').forEach(el => { el.src=''; el.classList.remove('show'); });
+  // Reset SMS photo zones
+  ['S1','S2','S3','S4'].forEach(k => {
+    const z = document.getElementById(k + 'Zone');
+    if (z) { const l=z.querySelector('.ph-label'); const i=z.querySelector('.ph-icon');
+      if(l) l.textContent='Tap to add'; if(i) i.textContent='📱'; }
+  });
   activatePage('page-lookup');
 }
 
