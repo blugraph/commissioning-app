@@ -399,7 +399,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
   <!-- X27 numeric measurement + X28 calculated -->
   <div class="card">
-    <div class="card-title">Cope to side invert / Invert</div>
+    <div class="card-title">Cope/Soffit to Side/Invert measurement</div>
     <div class="form-group">
       <label class="form-label">Drain measurement – X27 (m)</label>
       <input class="form-input" id="x27MeasInput" type="number" step="0.001"
@@ -413,12 +413,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
   <!-- X21 auto-calculated + X23 -->
   <div class="card">
-    <div class="card-title">X21 &amp; X23</div>
+    <div class="card-title">Calculation</div>
+    <div style="background:#E8F5E9;border-radius:6px;padding:10px;font-size:.84rem;margin-bottom:8px;">
+      X19 = X8 − X10 = <b id="x19Display">—</b> m
+    </div>
     <div style="background:#E3F2FD;border-radius:6px;padding:10px;font-size:.84rem;margin-bottom:10px;">
       X21 (auto) = X19 + offset = <b id="x21AutoDisplay">—</b> m
     </div>
     <div class="form-group">
-      <label class="form-label">Override X21 (leave blank to use auto value)</label>
+      <label class="form-label">Override X21</label>
       <input class="form-input" id="x21OverrideInput" type="number" step="0.001"
         placeholder="Optional override" oninput="overrideX21(this.value)">
     </div>
@@ -440,28 +443,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);
         </tbody>
       </table>
     </div>
-    <div style="padding:12px;">
-      <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P14 – Dual SIM cards photo evidence:</p>
-      <div class="photo-zone" id="P14Zone">
-        <input type="file" accept="image/*" id="photoP14" onchange="handlePhoto(this,'P14','P14Preview','P14Zone')">
-        <span class="ph-icon">📷</span>
-        <span class="ph-label">Dual SIM Cards</span>
-        <span class="ph-sub">Tap to capture photo</span>
-      </div>
-      <img id="P14Preview" class="photo-preview" alt="Dual SIM photo">
-    </div>
   </div>
 
-  <!-- 3-point sensors P15 -->
+  <!-- P14 + P15 side by side -->
   <div class="card">
-    <div class="card-title">P15 – 3-Point Calibration</div>
-    <div class="photo-zone" id="P15Zone">
-      <input type="file" accept="image/*" id="photoP15" onchange="handlePhoto(this,'P15','P15Preview','P15Zone')">
-      <span class="ph-icon">📷</span>
-      <span class="ph-label">Web screenshot of 3 point calibration values</span>
-      <span class="ph-sub">Tap to capture photo</span>
+    <div class="card-title">SIM &amp; Calibration Photos</div>
+    <div class="sms-grid">
+
+      <div class="sms-cell">
+        <div class="sms-label">P14 – Dual SIM Cards</div>
+        <div class="photo-zone sms-zone" id="P14Zone">
+          <input type="file" accept="image/*" id="photoP14" onchange="handlePhoto(this,'P14','P14Preview','P14Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P14Preview" class="photo-preview sms-preview" alt="Dual SIM photo">
+      </div>
+
+      <div class="sms-cell">
+        <div class="sms-label">P15 – 3-Point Calibration</div>
+        <div class="photo-zone sms-zone" id="P15Zone">
+          <input type="file" accept="image/*" id="photoP15" onchange="handlePhoto(this,'P15','P15Preview','P15Zone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Tap to add</span>
+        </div>
+        <img id="P15Preview" class="photo-preview sms-preview" alt="3-point calibration screenshot">
+      </div>
+
     </div>
-    <img id="P15Preview" class="photo-preview" alt="3-point calibration screenshot">
   </div>
 
   <div class="bottom-bar">
@@ -526,25 +535,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);
     <div class="card">
       <div class="card-title">Dry Canal</div>
       <div class="info-box">Canal is dry – sensor reads to invert level.</div>
-      <div style="margin-top:14px;">
-        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P1 – Dry canal / sensor installation photo:</p>
-        <div class="photo-zone" id="P1Zone">
-          <input type="file" accept="image/*" id="photoP1" onchange="handlePhoto(this,'P1','P1Preview','P1Zone')">
-          <span class="ph-icon">📷</span>
-          <span class="ph-label">Dry Canal / Sensor Installation</span>
-          <span class="ph-sub">Tap to capture photo</span>
+      <div class="sms-grid" style="margin-top:14px;">
+
+        <div class="sms-cell">
+          <div class="sms-label">P1 – Dry Canal / Sensor</div>
+          <div class="photo-zone sms-zone" id="P1Zone">
+            <input type="file" accept="image/*" id="photoP1" onchange="handlePhoto(this,'P1','P1Preview','P1Zone')">
+            <span class="ph-icon">📷</span>
+            <span class="ph-label">Tap to add</span>
+          </div>
+          <img id="P1Preview" class="photo-preview sms-preview" alt="Dry canal photo">
         </div>
-        <img id="P1Preview" class="photo-preview" alt="Dry canal photo">
-      </div>
-      <div style="margin-top:14px;">
-        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P13/P16 – Dashboard / website screenshot:</p>
-        <div class="photo-zone" id="P16Zone">
-          <input type="file" accept="image/*" id="photoP16" onchange="handlePhotoDual(this,'P16','P13','P16Preview','P16Zone')">
-          <span class="ph-icon">📷</span>
-          <span class="ph-label">Dashboard / Website Screenshot</span>
-          <span class="ph-sub">Tap to capture photo</span>
+
+        <div class="sms-cell">
+          <div class="sms-label">P13/P16 – Dashboard Screenshot</div>
+          <div class="photo-zone sms-zone" id="P16Zone">
+            <input type="file" accept="image/*" id="photoP16" onchange="handlePhotoDual(this,'P16','P13','P16Preview','P16Zone')">
+            <span class="ph-icon">📷</span>
+            <span class="ph-label">Tap to add</span>
+          </div>
+          <img id="P16Preview" class="photo-preview sms-preview" alt="Dashboard screenshot">
         </div>
-        <img id="P16Preview" class="photo-preview" alt="Dashboard screenshot">
+
       </div>
     </div>
   </div>
@@ -572,31 +584,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);
     </div>
   </div>
 
-  <div class="bottom-bar">
-    <button class="btn btn-secondary" style="flex:0 0 80px;" onclick="goBack()">← Back</button>
-    <button class="btn btn-primary" style="flex:1;" onclick="goToPage('page-part4')">Part 4 →</button>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     PAGE 5 – PART 4: CONFIGURATION & FINAL
-════════════════════════════════════════════ -->
-<div class="page" id="page-part4">
-  <div class="section-hdr">Part 4 – Configuration &amp; Final Stage</div>
-
-  <!-- Station ID photo (P11) -->
+  <!-- P11 Station ID screenshot -->
   <div class="card">
-    <div class="card-title">P11 – Station ID Label Photo</div>
+    <div class="card-title">P11 – Station ID</div>
     <p style="font-size:.82rem;color:var(--text2);margin-bottom:10px;">
-      Photo of station ID label affixed to data logger enclosure:
+      Station ID screen shot from Website
     </p>
     <div class="photo-zone" id="P11Zone">
       <input type="file" accept="image/*" id="photoP11" onchange="handlePhoto(this,'P11','P11Preview','P11Zone',600)">
       <span class="ph-icon">📷</span>
-      <span class="ph-label">Station ID Label</span>
+      <span class="ph-label">Station ID Screenshot</span>
       <span class="ph-sub">Tap to capture photo</span>
     </div>
-    <img id="P11Preview" class="photo-preview sq" alt="Station ID label photo">
+    <img id="P11Preview" class="photo-preview sq" alt="Station ID screenshot">
   </div>
 
   <div class="bottom-bar">
@@ -685,7 +685,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       </div>
 
       <div class="sms-cell">
-        <div class="sms-label">P10 – Water Level</div>
+        <div class="sms-label">P10 – Cope/Soffit to Side invert</div>
         <div class="photo-zone sms-zone" id="P10Zone">
           <input type="file" accept="image/*" id="photoP10" onchange="handlePhoto(this,'P10','P10Preview','P10Zone')">
           <span class="ph-icon">📷</span>
@@ -1389,8 +1389,10 @@ function refreshX28Display() {
 }
 
 function refreshX21X23Display() {
+  const d19 = document.getElementById('x19Display');
   const d21 = document.getElementById('x21AutoDisplay');
   const d23 = document.getElementById('x23Display');
+  if (d19) d19.textContent = STATE.X19 !== null && STATE.X19 !== undefined ? fm(STATE.X19) : '—';
   if (d21) d21.textContent = fm(STATE.X21_auto) || '—';
   if (d23) d23.textContent = STATE.X23 !== null ? fm(STATE.X23) : '—';
 }
@@ -1628,13 +1630,12 @@ function resizeAndStore(file, key, previewId, zoneId, maxW) {
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
-const PAGE_ORDER = ['page-lookup','page-indicators','page-part3','page-part4','page-photos-site','page-photos-monitor','page-photos-sms'];
+const PAGE_ORDER = ['page-lookup','page-indicators','page-part3','page-photos-site','page-photos-monitor','page-photos-sms'];
 const PAGE_TITLES = {
   'page-lookup':         'WL Station Commissioning',
   'page-indicators':     'Indicators & Sensor Setup',
   'page-part2':          'Part 2 – Level Measurements',
   'page-part3':          'Part 3 – Water Level Validation',
-  'page-part4':          'Part 4 – Configuration',
   'page-photos-site':    'Site Documentation Photos',
   'page-photos-monitor': 'Monitoring System Photos',
   'page-photos-sms':     'SMS Screenshots',
