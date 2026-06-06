@@ -1253,9 +1253,11 @@ function computePart2Data() {
   STATE.X13 = g('oldInvert');   // col Z
 
   // Computed from spreadsheet values
-  STATE.X6  = STATE.X4  - STATE.X5;   // Y − P
-  STATE.X9  = STATE.X7  - STATE.X8;   // X − M
-  STATE.X15 = STATE.X13 - STATE.X14;  // Z − N
+  // If the old-survey source value is zero / unavailable, the derived
+  // difference is meaningless — set to null so it renders as "NA".
+  STATE.X6  = STATE.X4  ? STATE.X4  - STATE.X5  : null;  // Y − P (NA if X4 missing)
+  STATE.X9  = STATE.X7  ? STATE.X7  - STATE.X8  : null;  // X − M (NA if X7 missing)
+  STATE.X15 = STATE.X13 ? STATE.X13 - STATE.X14 : null;  // Z − N (NA if X13 missing)
   STATE.X16 = STATE.X13 - STATE.X4;   // Z − Y
   STATE.X17 = STATE.X14 - STATE.X5;   // N − P
   STATE.X19 = STATE.X8  - STATE.X10;  // M − O
@@ -1937,10 +1939,10 @@ function getXValues() {
     'X29': S.X29 || '', 'X28': isWater ? fm(S.X28) : '', 'X27': fm(S.X27), 'X26': S.X26 || '',
     'X25': fm(S.X25), 'X24': fm(S.X24), 'X23': fm(S.X23),
     'X21': fm(S.X21), 'X19': fm(S.X19), 'X17': fm(S.X17),
-    'X16': fm(S.X16), 'X15': fm(S.X15), 'X14': fm(S.X14),
+    'X16': fm(S.X16), 'X15': S.X15 !== null ? fm(S.X15) : 'NA', 'X14': fm(S.X14),
     'X13': fm(S.X13), 'X11': fm(S.X11), 'X10': fm(S.X10),
-    'X9':  fm(S.X9),  'X8':  fm(S.X8),  'X7':  fm(S.X7),
-    'X6':  fm(S.X6),  'X5':  fm(S.X5),  'X4':  fm(S.X4),
+    'X9':  S.X9  !== null ? fm(S.X9)  : 'NA', 'X8': fm(S.X8), 'X7': fm(S.X7),
+    'X6':  S.X6  !== null ? fm(S.X6)  : 'NA', 'X5': fm(S.X5), 'X4': fm(S.X4),
     'X3':  S.stationName  || '',
     'X2':  S.commDateTime || '',
     'X1':  S.stationId    || '',
