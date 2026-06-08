@@ -1,4 +1,4 @@
-const CACHE = 'commissioning-v3';
+const CACHE = 'commissioning-v4';
 const PRECACHE = ['./'];
 
 self.addEventListener('install', e => {

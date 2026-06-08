@@ -346,6 +346,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);
         <div class="sname" id="resultName"></div>
         <div class="sid" id="resultId"></div>
       </div>
+      <!-- X51: lowest Critical Road Level from spreadsheet -->
+      <div id="x51Row" style="display:none;
+           background:#FFF3E0;border-left:4px solid #FF8F00;
+           border-radius:0 var(--radius) var(--radius) 0;
+           padding:10px 14px;margin-top:10px;font-size:.88rem;">
+        <span style="color:var(--text2);font-size:.78rem;display:block;margin-bottom:2px;">
+          X51 – Lowest Critical Level (Road)
+        </span>
+        <span style="font-weight:700;font-family:monospace;font-size:1rem;color:#E65100;"
+              id="x51Display">—</span>
+        <span style="color:var(--text2);font-size:.78rem;"> mRL</span>
+      </div>
       <button class="btn btn-primary btn-full mt-12" onclick="startCommissioning()">
         ▶ Start Commissioning
       </button>
@@ -887,6 +899,11 @@ const CFG = {
     oldSoffit:   28,  // AC
     // Old offset
     oldOffset:   29,  // AD
+    // Critical Road Levels — X51 = min of these three.
+    // ⚠️ Verify these column letters match your Survey File spreadsheet.
+    critLevel1:  30,  // AE → CRITICAL LEVEL 1 (ROAD)
+    critLevel2:  31,  // AF → CRITICAL LEVEL 2 (ROAD)
+    critLevel3:  32,  // AG → CRITICAL LEVEL 3 (ROAD)
   },
   // Row labels for Part 2
   measLabels: [
@@ -917,6 +934,7 @@ let STATE = {
   X10:null, X11:null,
   X13:null, X14:null, X15:null, X16:null,
   X17:null, X19:null,
+  X51:null, // Lowest of CRITICAL LEVEL 1/2/3 (ROAD) from spreadsheet
   // Indicator selections
   X26: 'Hydrostatic',        // sensor type text
   X27: null,                 // numeric drain measurement → X28 formula
@@ -1172,6 +1190,17 @@ async function lookupStation() {
     document.getElementById('resultId').textContent   = 'ID: ' + STATE.stationId;
     document.getElementById('stationResult').style.display = 'block';
 
+    // Compute and show X51 (lowest critical road level) immediately at lookup time
+    const cl1 = parseFloat(row[CFG.cols.critLevel1]) || 0;
+    const cl2 = parseFloat(row[CFG.cols.critLevel2]) || 0;
+    const cl3 = parseFloat(row[CFG.cols.critLevel3]) || 0;
+    const validCL = [cl1, cl2, cl3].filter(v => v !== 0 && !isNaN(v));
+    STATE.X51 = validCL.length ? Math.min(...validCL) : null;
+    const x51Row = document.getElementById('x51Row');
+    const x51Disp = document.getElementById('x51Display');
+    if (x51Disp) x51Disp.textContent = STATE.X51 !== null ? STATE.X51.toFixed(3) : 'NA';
+    if (x51Row)  x51Row.style.display = 'block';
+
   } catch(e) {
     showLookupError('Fetch error: ' + e.message);
   } finally {
@@ -1202,7 +1231,7 @@ async function resolveSheetName() {
 async function fetchSheetData() {
   // Resolve the real tab name from the GID so we never hardcode "Sheet1"
   const sheetName = await resolveSheetName();
-  const range = sheetName ? `'${sheetName}'!A:AE` : 'A:AE';
+  const range = sheetName ? `'${sheetName}'!A:AH` : 'A:AH';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.spreadsheetId}/values/${encodeURIComponent(range)}`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${STATE.accessToken}` }
@@ -1261,6 +1290,13 @@ function computePart2Data() {
   STATE.X16 = STATE.X13 - STATE.X4;   // Z − Y
   STATE.X17 = STATE.X14 - STATE.X5;   // N − P
   STATE.X19 = STATE.X8  - STATE.X10;  // M − O
+  // X51 = lowest Critical Level (Road) — ignore zero/missing values
+  const cl1 = parseFloat(row[CFG.cols.critLevel1]) || 0;
+  const cl2 = parseFloat(row[CFG.cols.critLevel2]) || 0;
+  const cl3 = parseFloat(row[CFG.cols.critLevel3]) || 0;
+  const validCritLevels = [cl1, cl2, cl3].filter(v => v !== 0 && !isNaN(v));
+  STATE.X51 = validCritLevels.length ? Math.min(...validCritLevels) : null;
+
   STATE.X24 = STATE.X17 + rand(0, 0.005); // X17 + random 0–5 mm
   STATE.X25 = STATE.X24 + STATE.X5;      // X24 + P
   // X21 = X19 + random(0–3 cm), auto-calculated; user can override
@@ -1935,6 +1971,8 @@ function getXValues() {
   // e.g. "X28" before "X2" and "X8", "X25" before "X2" and "X5".
   const isWater = S.canalCondition === 'water';
   return {
+    // 3-char keys first so 'X5'/'X1' etc. never partially match 'X51','X15' …
+    'X51': S.X51 !== null ? fm(S.X51) : 'NA',
     'X30': isWater ? fm(S.X30) : '',
     'X29': S.X29 || '', 'X28': isWater ? fm(S.X28) : '', 'X27': fm(S.X27), 'X26': S.X26 || '',
     'X25': fm(S.X25), 'X24': fm(S.X24), 'X23': fm(S.X23),
