@@ -331,6 +331,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);
   <div class="card" id="lookupCard">
     <div class="card-title">Enter Station ID</div>
     <div class="form-group">
+      <label class="form-label">Station Type</label>
+      <div class="toggle-group" style="margin:0;">
+        <div class="toggle-item active" id="stStdBtn" onclick="setStationType('Hydrostatic')">💧 Hydrostatic</div>
+        <div class="toggle-item" id="stRadarBtn" onclick="setStationType('Radar')">📡 Radar</div>
+      </div>
+    </div>
+    <div class="form-group">
       <label class="form-label">Station ID</label>
       <input class="form-input" id="stationIdInput" type="text"
         placeholder="e.g. WL-001" autocomplete="off" autocapitalize="characters"
@@ -870,7 +877,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 const CFG = {
   spreadsheetId: '13qNfGkeo6c9hYy4uTlCSXOaoI3az8uQPyqKdZXMunD4',
   sheetGid: 0,
-  templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ',
+  templateDocId:  '1zLcS6cVV4Fr4m70Nas6y5JtWs7Nf9mSZlgUGNDCBUgQ', // Hydrostatic (default)
+  radarTemplateDocId: '1w6QpSwpvdSZkOh1aPaVbvcr5GtC7bqGiewUAjb1zf78', // Radar station template
   targetFolderId: '1M50ZKOkqFIhqitB82mao0U9FSXqQeVMb', // Shared Drive output folder
   scopes: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly',
   // Apps Script Web App URL — update after deploying apps-script/Code.gs
@@ -935,6 +943,8 @@ let STATE = {
   X13:null, X14:null, X15:null, X16:null,
   X17:null, X19:null,
   X51:null, // Lowest of CRITICAL LEVEL 1/2/3 (ROAD) from spreadsheet
+  // Station type (chosen on page 1) — selects which doc template is copied
+  stationType: 'Hydrostatic', // 'Hydrostatic' | 'Radar'
   // Indicator selections
   X26: 'Hydrostatic',        // sensor type text
   X27: null,                 // numeric drain measurement → X28 formula
@@ -1371,6 +1381,17 @@ function setSensorType(type) {
   document.getElementById('sensorRadar').classList.toggle('active', type === 'Radar');
 }
 
+// Station type chosen on page 1 — decides which doc template is copied.
+// Keeps the sensor-type (X26) indicator in sync by default.
+function setStationType(type) {
+  STATE.stationType = type;
+  const std = document.getElementById('stStdBtn');
+  const rad = document.getElementById('stRadarBtn');
+  if (std) std.classList.toggle('active', type === 'Hydrostatic');
+  if (rad) rad.classList.toggle('active', type === 'Radar');
+  setSensorType(type); // mirror into X26 sensor-type indicator
+}
+
 function setDrainOpen(isOpen) {
   STATE.drainIsOpen = isOpen;
   document.getElementById('drainOpen').classList.toggle('active', isOpen);
@@ -1545,8 +1566,8 @@ function setCanal(cond) {
 // Cope to water level — shown in water section
 function calcCopeDist() {
   const dist = parseFloat(document.getElementById('copeToWaterInput').value);
-  const row = STATE.sheetRow || [];
-  const copeLevel = parseFloat(row[CFG.cols.newCope]) || 0;
+  const sensorLevel = (STATE.X8 !== null && STATE.X8 !== undefined)
+    ? STATE.X8 : (parseFloat((STATE.sheetRow || [])[CFG.cols.newSensor]) || 0);
   const el = document.getElementById('waterCalcDisplay');
   if (isNaN(dist)) {
     if (el) el.innerHTML = '<div class="info-box">Enter the cope-to-water distance above.</div>';
@@ -1555,22 +1576,22 @@ function calcCopeDist() {
     STATE.X28 = null;
     return;
   }
-  // Water level (mRL) = cope level − measured distance
-  const waterLevel = copeLevel - dist;
+  // X28 = X8 − X30  (sensor level − measured cope-to-water distance)
+  const waterLevel = sensorLevel - dist;
   STATE.X30 = dist;
   STATE.X28 = waterLevel;
-  STATE.waterCalc = { copeLevel, dist, waterLevel };
+  STATE.waterCalc = { sensorLevel, dist, waterLevel };
   if (el) el.innerHTML = `
     <div class="calc-row">
-      <div class="label">Cope Level (mRL)</div>
-      <div class="value">${fm(copeLevel)} mRL</div>
+      <div class="label">Sensor Level – X8 (mRL)</div>
+      <div class="value">${fm(sensorLevel)} mRL</div>
     </div>
     <div class="calc-row">
-      <div class="label">Cope to Water Distance (m)</div>
+      <div class="label">Cope to Water Distance – X30 (m)</div>
       <div class="value">${fm(dist)} m</div>
     </div>
     <div class="calc-row">
-      <div class="label">Water Level = Cope − Distance</div>
+      <div class="label">X28 = X8 − X30</div>
       <div class="value"><b>${fm(waterLevel)} mRL</b></div>
     </div>
   `;
@@ -1797,9 +1818,9 @@ function generateReportHTML() {
     p3Calcs = `
       <p><b>Canal Condition:</b> Water in Canal</p>
       <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;margin-top:8px;">
-        <tr><td>Cope Level (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.copeLevel)}</b></td></tr>
-        <tr><td>Cope to Water Distance (m)</td><td style="font-family:monospace;"><b>${fm(wc.dist)}</b></td></tr>
-        <tr><td>Water Level = Cope − Distance (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.waterLevel)}</b></td></tr>
+        <tr><td>Sensor Level – X8 (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.sensorLevel)}</b></td></tr>
+        <tr><td>Cope to Water Distance – X30 (m)</td><td style="font-family:monospace;"><b>${fm(wc.dist)}</b></td></tr>
+        <tr><td>X28 = X8 − X30 (mRL)</td><td style="font-family:monospace;"><b>${fm(wc.waterLevel)}</b></td></tr>
       </table>`;
   }
 
@@ -1914,6 +1935,11 @@ async function saveToGoogleDrive() {
     await ensureToken();
     const filename = getFilename();
 
+    // Choose the template based on the station type selected on page 1.
+    const templateId = STATE.stationType === 'Radar'
+      ? CFG.radarTemplateDocId
+      : CFG.templateDocId;
+
     // 1 ── Copy the template via Apps Script POST (text/plain avoids CORS
     //      preflight; POST body is read from e.postData.contents server-side).
     //      Use CFG.targetFolderId (personal Drive folder) — NOT the spreadsheet's
@@ -1923,7 +1949,7 @@ async function saveToGoogleDrive() {
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'copyTemplate',
-        templateId: CFG.templateDocId,
+        templateId: templateId,
         filename,
         ...(CFG.targetFolderId ? { parentId: CFG.targetFolderId } : {}),
       }),
@@ -2203,8 +2229,9 @@ function startNewCommissioning() {
   STATE.commDateTime = '';
   STATE.X4=null;STATE.X5=null;STATE.X6=null;STATE.X7=null;STATE.X8=null;STATE.X9=null;
   STATE.X10=null;STATE.X11=null;STATE.X13=null;STATE.X14=null;STATE.X15=null;
-  STATE.X16=null;STATE.X17=null;STATE.X19=null;
+  STATE.X16=null;STATE.X17=null;STATE.X19=null;STATE.X51=null;
   STATE.X21=null;STATE.X21_auto=null;STATE.X23=null;STATE.X24=null;STATE.X25=null;
+  STATE.stationType='Hydrostatic';
   STATE.X26='Hydrostatic';STATE.X27=null;STATE.X28=null;STATE.X29='Open – U-Drain';
   STATE.X30=null;STATE.drainIsOpen=true;
   STATE.photos = {};STATE.photoAspects = {};
@@ -2218,6 +2245,9 @@ function startNewCommissioning() {
   if (sr) { sr.innerHTML = ''; sr.style.display = 'none'; }
   document.getElementById('stationIdInput').value = '';
   document.getElementById('stationResult').style.display = 'none';
+  // Reset station-type toggle + X51 row on page 1
+  setStationType('Hydrostatic');
+  const x51r = document.getElementById('x51Row'); if (x51r) x51r.style.display = 'none';
   // Reset indicators UI
   const ov = document.getElementById('x21OverrideInput'); if (ov) ov.value = '';
   const x27m = document.getElementById('x27MeasInput'); if (x27m) x27m.value = '';
