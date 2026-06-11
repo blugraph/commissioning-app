@@ -567,13 +567,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);
         </div>
 
         <div class="sms-cell">
-          <div class="sms-label">P13/P16 – Dashboard Screenshot</div>
-          <div class="photo-zone sms-zone" id="P16Zone">
-            <input type="file" accept="image/*" id="photoP16" onchange="handlePhotoDual(this,'P16','P13','P16Preview','P16Zone')">
+          <div class="sms-label">P13 – Dashboard Screenshot</div>
+          <div class="photo-zone sms-zone" id="P13dZone">
+            <input type="file" accept="image/*" id="photoP13d" onchange="handlePhoto(this,'P13','P13dPreview','P13dZone')">
             <span class="ph-icon">📷</span>
             <span class="ph-label">Tap to add</span>
           </div>
-          <img id="P16Preview" class="photo-preview sms-preview" alt="Dashboard screenshot">
+          <img id="P13dPreview" class="photo-preview sms-preview" alt="Dashboard screenshot">
         </div>
 
       </div>
@@ -591,7 +591,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);
       </div>
       <div id="waterCalcDisplay"></div>
       <div style="margin-top:14px;">
-        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P2 – Water level measurement photo:</p>
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P2 – Water level measurement with tape:</p>
         <div class="photo-zone" id="P2Zone">
           <input type="file" accept="image/*" id="photoP2" onchange="handlePhoto(this,'P2','P2Preview','P2Zone')">
           <span class="ph-icon">📷</span>
@@ -599,6 +599,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);
           <span class="ph-sub">Tap to capture photo</span>
         </div>
         <img id="P2Preview" class="photo-preview" alt="Water level photo">
+      </div>
+      <div style="margin-top:14px;">
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px;">P16 – Screen shot of value on the website:</p>
+        <div class="photo-zone" id="P16wZone">
+          <input type="file" accept="image/*" id="photoP16w" onchange="handlePhoto(this,'P16','P16wPreview','P16wZone')">
+          <span class="ph-icon">📷</span>
+          <span class="ph-label">Website Value Screenshot</span>
+          <span class="ph-sub">Tap to capture photo</span>
+        </div>
+        <img id="P16wPreview" class="photo-preview" alt="Website value screenshot">
       </div>
     </div>
   </div>
